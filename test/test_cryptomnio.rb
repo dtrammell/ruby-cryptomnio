@@ -37,13 +37,11 @@ puts "2020-04 - %s" % Cryptomnio::AUTHOR
 puts "API Version: %s" % Cryptomnio::API_VERSION
 puts
 
-# Test Cyrptomnio Authentication
-puts "Testing Basic Authentication"
+puts "Testing Authentication/BasicAuth"
 client.auth_basic
 
-# Test Exchange Key storage
-puts "Testing Exchange Key storage"
-client.store_keys
+puts "Testing Exchange Keys/Upload API Key"
+client.upload_keys
 
 # Test Exchange Key activation
 #puts "Testing Exchange Key activation"
