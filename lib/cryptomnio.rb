@@ -60,7 +60,7 @@ class Cryptomnio::REST::Client < Cryptomnio::REST # Cryptomnio REST Client
 		return cryptomnio_header_auth
 	end
 
-	def store_keys
+	def upload_keys
 		# If API key provided in config, upload and store it
 		for cred in @config[:apikeys] do
 			payload = {
