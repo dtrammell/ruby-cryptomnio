@@ -71,6 +71,8 @@
 
   <ul class="link-list" role="directory">
     
+    <li ><a href="#method-i-geminfo">#geminfo</a>
+    
     <li ><a href="#method-i-initalize">#initalize</a>
     
   </ul>
@@ -87,7 +89,7 @@
   <section class="description">
     
 <p>This is the root <a href="Cryptomnio.html">Cryptomnio</a> object Class.  It
-contains global constants</p>
+contains global constants.</p>
 
   </section>
 
@@ -106,22 +108,32 @@ contains global constants</p>
       
         <dt id="API_VERSION">API_VERSION
         
-        <dd>
+        <dd><p>The <a href="Cryptomnio.html">Cryptomnio</a> API Version</p>
         
       
         <dt id="AUTHOR">AUTHOR
         
-        <dd>
+        <dd><p>The name of the Gem&#39;s Author</p>
+        
+      
+        <dt id="DATE">DATE
+        
+        <dd><p>The publication date of the current Gem version</p>
         
       
         <dt id="GEM_VERSION">GEM_VERSION
         
-        <dd>
+        <dd><p>The Gem version</p>
         
       
         <dt id="NAME">NAME
         
-        <dd><p>Constants</p>
+        <dd><p>The name of the Gem</p>
+        
+      
+        <dt id="URI_VERSION">URI_VERSION
+        
+        <dd><p><a href="Cryptomnio.html#URI_VERSION">URI_VERSION</a> = “/v1”</p>
         
       
       </dl>
@@ -135,6 +147,43 @@ contains global constants</p>
        <header>
          <h3>Public Instance Methods</h3>
        </header>
+
+    
+      <div id="method-i-geminfo" class="method-detail ">
+        
+        <div class="method-heading">
+          <span class="method-name">geminfo</span><span
+            class="method-args">()</span>
+          
+          <span class="method-click-advice">click to toggle source</span>
+          
+        </div>
+        
+
+        <div class="method-description">
+          
+          
+          
+          
+
+          
+          <div class="method-source-code" id="geminfo-source">
+            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 31</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">geminfo</span>
+        <span class="ruby-identifier">info</span> = <span class="ruby-constant">NAME</span> <span class="ruby-operator">+</span> <span class="ruby-string">&quot; &quot;</span> <span class="ruby-operator">+</span> <span class="ruby-constant">GEM_VERSION</span> <span class="ruby-operator">+</span> <span class="ruby-string">&quot;\n&quot;</span>
+        <span class="ruby-identifier">info</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-constant">DATE</span> <span class="ruby-operator">+</span> <span class="ruby-string">&quot; - &quot;</span> <span class="ruby-operator">+</span> <span class="ruby-constant">AUTHOR</span> <span class="ruby-operator">+</span> <span class="ruby-string">&quot;\n&quot;</span>
+        <span class="ruby-identifier">info</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-string">&quot;Cryptomnio API Version: &quot;</span> <span class="ruby-operator">+</span> <span class="ruby-constant">API_VERSION</span> <span class="ruby-operator">+</span> <span class="ruby-string">&quot;\n&quot;</span>
+
+        <span class="ruby-keyword">return</span> <span class="ruby-identifier">info</span>
+<span class="ruby-keyword">end</span></pre>
+          </div>
+          
+        </div>
+
+        
+
+        
+      </div>
 
     
       <div id="method-i-initalize" class="method-detail ">
@@ -156,7 +205,7 @@ contains global constants</p>
 
           
           <div class="method-source-code" id="initalize-source">
-            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 20</span>
+            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 27</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initalize</span>
         <span class="ruby-identifier">puts</span> <span class="ruby-string">&quot;Cryptomnio Initalized&quot;</span> <span class="ruby-keyword">if</span> <span class="ruby-constant">DEBUG</span>
 <span class="ruby-keyword">end</span></pre>

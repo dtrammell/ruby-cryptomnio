@@ -77,29 +77,35 @@
     
     <li ><a href="#method-i-_check_errors">#_check_errors</a>
     
+    <li ><a href="#method-i-_rest_call">#_rest_call</a>
+    
     <li ><a href="#method-i-auth_basic">#auth_basic</a>
     
-    <li ><a href="#method-i-delete_api_key">#delete_api_key</a>
+    <li ><a href="#method-i-auth_cryptomnio">#auth_cryptomnio</a>
     
-    <li ><a href="#method-i-delete_api_keys">#delete_api_keys</a>
+    <li ><a href="#method-i-auth_cryptomnio_test">#auth_cryptomnio_test</a>
     
-    <li ><a href="#method-i-get_all_exchange_keys">#get_all_exchange_keys</a>
+    <li ><a href="#method-i-create_venue_account_order_limit">#create_venue_account_order_limit</a>
     
-    <li ><a href="#method-i-order_cancel">#order_cancel</a>
+    <li ><a href="#method-i-create_venue_account_order_market">#create_venue_account_order_market</a>
     
-    <li ><a href="#method-i-order_create">#order_create</a>
+    <li ><a href="#method-i-delete_venue_account_order">#delete_venue_account_order</a>
     
-    <li ><a href="#method-i-order_get">#order_get</a>
+    <li ><a href="#method-i-retrieve_venue_account">#retrieve_venue_account</a>
     
-    <li ><a href="#method-i-orders_active_get">#orders_active_get</a>
+    <li ><a href="#method-i-retrieve_venue_account_balance">#retrieve_venue_account_balance</a>
     
-    <li ><a href="#method-i-orders_history_get">#orders_history_get</a>
+    <li ><a href="#method-i-retrieve_venue_account_order">#retrieve_venue_account_order</a>
     
-    <li ><a href="#method-i-upload_api_key">#upload_api_key</a>
+    <li ><a href="#method-i-retrieve_venue_account_orders">#retrieve_venue_account_orders</a>
     
-    <li ><a href="#method-i-upload_api_keys">#upload_api_keys</a>
+    <li ><a href="#method-i-retrieve_venue_account_trade">#retrieve_venue_account_trade</a>
     
-    <li ><a href="#method-i-wallet_get">#wallet_get</a>
+    <li ><a href="#method-i-retrieve_venue_account_trades">#retrieve_venue_account_trades</a>
+    
+    <li ><a href="#method-i-retrieve_venue_markets">#retrieve_venue_markets</a>
+    
+    <li ><a href="#method-i-retrieve_venues">#retrieve_venues</a>
     
   </ul>
 </div>
@@ -173,18 +179,7 @@ Class and contains REST Client-specific methods and variables.</p>
 
         <div class="method-description">
           
-          <p>def <a href="Client.html#method-i-wallet_get">#wallet_get</a>( key,
-exchange )</p>
-
-<pre class="ruby"><span class="ruby-identifier">wallets</span> = <span class="ruby-keyword">self</span>.<span class="ruby-identifier">wallet_get_all</span>( <span class="ruby-identifier">key</span> )
-<span class="ruby-identifier">wallets</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">ex</span><span class="ruby-operator">|</span>
-        <span class="ruby-keyword">return</span> <span class="ruby-identifier">ex</span>[<span class="ruby-string">&quot;balances&quot;</span>] <span class="ruby-keyword">if</span> <span class="ruby-identifier">ex</span>[<span class="ruby-string">&quot;exchange&quot;</span>] <span class="ruby-operator">==</span> <span class="ruby-identifier">exchange</span>
-<span class="ruby-keyword">end</span>
-<span class="ruby-comment"># Requested wallet not found</span>
-<span class="ruby-keyword">return</span> <span class="ruby-keyword">nil</span>
-</pre>
-
-<p>end</p>
+          <p><a href="../../Object.html">Object</a> initialization</p>
           
           
             <div class="method-calls-super">
@@ -195,7 +190,7 @@ exchange )</p>
 
           
           <div class="method-source-code" id="new-source">
-            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 320</span>
+            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 324</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>
         <span class="ruby-keyword">yield</span> <span class="ruby-keyword">self</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">block_given?</span>
         <span class="ruby-keyword">super</span>
@@ -245,7 +240,7 @@ headers:    { &quot;Authorization&quot; =&gt; @config[:auth_string] }</pre>
 
           
           <div class="method-source-code" id="3Aget-2C-source">
-            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 98</span>
+            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 113</span>
                 </pre>
           </div>
           
@@ -270,20 +265,31 @@ headers:    { &quot;Authorization&quot; =&gt; @config[:auth_string] }</pre>
 
         <div class="method-description">
           
-          
+          <p>Error-handling method</p>
           
           
 
           
           <div class="method-source-code" id="_check_errors-source">
-            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 328</span>
+            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 333</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">_check_errors</span>( <span class="ruby-identifier">response</span>, <span class="ruby-identifier">thisfailure</span> )
         <span class="ruby-keyword">case</span> <span class="ruby-identifier">response</span>.<span class="ruby-identifier">code</span>
         <span class="ruby-keyword">when</span> <span class="ruby-value">400</span>
                 <span class="ruby-identifier">raise</span> <span class="ruby-string">&quot;Error: [%d]: %s&quot;</span> <span class="ruby-operator">%</span> [ <span class="ruby-identifier">response</span>.<span class="ruby-identifier">code</span>, <span class="ruby-identifier">response</span> ] 
                 <span class="ruby-keyword">return</span> <span class="ruby-keyword">false</span>
         <span class="ruby-keyword">when</span> <span class="ruby-value">401</span>
-                <span class="ruby-identifier">raise</span> <span class="ruby-string">&quot;Cryptomnio Basic Authentication for user %s failed: [%d]: %s&quot;</span> <span class="ruby-operator">%</span> [ <span class="ruby-ivar">@config</span>[<span class="ruby-value">:username</span>], <span class="ruby-identifier">response</span>.<span class="ruby-identifier">code</span>, <span class="ruby-identifier">response</span> ] 
+                <span class="ruby-keyword">case</span> <span class="ruby-ivar">@config</span>[<span class="ruby-value">:authtype</span>] 
+                <span class="ruby-keyword">when</span> <span class="ruby-string">&quot;Basic&quot;</span>
+                        <span class="ruby-identifier">raise</span> <span class="ruby-string">&quot;Cryptomnio Basic Authentication for user %s failed: [%d]: %s&quot;</span> <span class="ruby-operator">%</span> [ <span class="ruby-ivar">@config</span>[<span class="ruby-value">:username</span>], <span class="ruby-identifier">response</span>.<span class="ruby-identifier">code</span>, <span class="ruby-identifier">response</span> ]
+                        <span class="ruby-keyword">return</span> <span class="ruby-keyword">false</span>
+                <span class="ruby-keyword">when</span> <span class="ruby-string">&quot;Cryptomnio&quot;</span>
+                        <span class="ruby-identifier">raise</span> <span class="ruby-string">&quot;Cryptomnio Key Authentication failed: [%d]: %s&quot;</span> <span class="ruby-operator">%</span> [ <span class="ruby-identifier">response</span>.<span class="ruby-identifier">code</span>, <span class="ruby-identifier">response</span> ]
+                        <span class="ruby-keyword">return</span> <span class="ruby-keyword">false</span>
+                <span class="ruby-keyword">else</span>
+                        <span class="ruby-identifier">raise</span> <span class="ruby-string">&quot;Authentication failed: [%d]: %s&quot;</span> <span class="ruby-operator">%</span> [ <span class="ruby-identifier">response</span>.<span class="ruby-identifier">code</span>, <span class="ruby-identifier">response</span> ]
+                <span class="ruby-keyword">end</span>
+        <span class="ruby-keyword">when</span> <span class="ruby-value">404</span>
+                <span class="ruby-identifier">raise</span> <span class="ruby-string">&quot;Error: Missing Resource&quot;</span>
                 <span class="ruby-keyword">return</span> <span class="ruby-keyword">false</span>
         <span class="ruby-keyword">when</span> <span class="ruby-operator">!</span><span class="ruby-value">200</span>
                 <span class="ruby-identifier">raise</span> <span class="ruby-identifier">thisfailure</span>
@@ -291,6 +297,79 @@ headers:    { &quot;Authorization&quot; =&gt; @config[:auth_string] }</pre>
         <span class="ruby-keyword">else</span>
                 <span class="ruby-comment"># Success!</span>
                 <span class="ruby-keyword">return</span> <span class="ruby-keyword">true</span>
+        <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span></pre>
+          </div>
+          
+        </div>
+
+        
+
+        
+      </div>
+
+    
+      <div id="method-i-_rest_call" class="method-detail ">
+        
+        <div class="method-heading">
+          <span class="method-name">_rest_call</span><span
+            class="method-args">( method = :get, uripath = &quot;/&quot;, uriparameters = nil, error_string = &quot;REST API Call Failed&quot;, body = nil )</span>
+          
+          <span class="method-click-advice">click to toggle source</span>
+          
+        </div>
+        
+
+        <div class="method-description">
+          
+          <p>Generic REST API call method Provides RestClient call with needed
+authentication headers and error handling</p>
+          
+          
+
+          
+          <div class="method-source-code" id="_rest_call-source">
+            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 171</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">_rest_call</span>( <span class="ruby-identifier">method</span> = <span class="ruby-value">:get</span>, <span class="ruby-identifier">uripath</span> = <span class="ruby-string">&quot;/&quot;</span>, <span class="ruby-identifier">uriparameters</span> = <span class="ruby-keyword">nil</span>, <span class="ruby-identifier">error_string</span> = <span class="ruby-string">&quot;REST API Call Failed&quot;</span>, <span class="ruby-identifier">body</span> = <span class="ruby-keyword">nil</span> )
+        <span class="ruby-comment"># Get the HMAC SHA-512 hash signature value for the method+URIpath</span>
+        <span class="ruby-identifier">signature</span> = <span class="ruby-keyword">self</span>.<span class="ruby-identifier">auth_cryptomnio</span>( <span class="ruby-identifier">method</span>, <span class="ruby-constant">URI_VERSION</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">uripath</span> )
+
+        <span class="ruby-comment"># Build the URI from the URIpath and optional parameters</span>
+        <span class="ruby-identifier">uri</span> = <span class="ruby-ivar">@config</span>[<span class="ruby-value">:apiurl</span>] <span class="ruby-operator">+</span> <span class="ruby-constant">URI_VERSION</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">uripath</span>
+        <span class="ruby-identifier">uri</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-string">&quot;?&quot;</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">uriparameters</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">uriparameters</span>
+
+        <span class="ruby-comment"># Built the headers</span>
+        <span class="ruby-identifier">headers</span> = {
+                <span class="ruby-comment"># Authentication headers Access-Key and Sign</span>
+                <span class="ruby-string">&quot;Access-Key&quot;</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-ivar">@config</span>[<span class="ruby-value">:access_key</span>],
+                <span class="ruby-string">&quot;Sign&quot;</span>       <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">signature</span>
+        }
+        <span class="ruby-comment"># Add a Content-type header for application/json if there is a payload body to send</span>
+        <span class="ruby-identifier">headers</span>[<span class="ruby-string">&quot;Content-type&quot;</span>] = <span class="ruby-string">&quot;application/json&quot;</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">body</span>
+
+        <span class="ruby-comment"># Call RestClient based on the method against URI with authentication headers &quot;Access-Key&quot; and &quot;Sign&quot;</span>
+        <span class="ruby-constant">RestClient</span><span class="ruby-operator">::</span><span class="ruby-constant">Request</span>.<span class="ruby-identifier">execute</span>(
+                <span class="ruby-value">method:</span>  <span class="ruby-identifier">method</span>,
+                <span class="ruby-value">url:</span>     <span class="ruby-identifier">uri</span>,
+                <span class="ruby-value">headers:</span> <span class="ruby-identifier">headers</span>,
+                <span class="ruby-value">payload:</span> <span class="ruby-identifier">body</span>
+                ) <span class="ruby-keyword">do</span>
+                <span class="ruby-operator">|</span><span class="ruby-identifier">response</span>, <span class="ruby-identifier">request</span>, <span class="ruby-identifier">result</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span><span class="ruby-operator">|</span>
+
+                <span class="ruby-comment"># Verbose output</span>
+                <span class="ruby-keyword">if</span> <span class="ruby-constant">VERBOSITY</span> <span class="ruby-operator">&gt;=</span> <span class="ruby-value">3</span>
+                        <span class="ruby-identifier">puts</span> <span class="ruby-string">&quot;Request:      %s: %s&quot;</span> <span class="ruby-operator">%</span> [ <span class="ruby-identifier">request</span>.<span class="ruby-identifier">method</span>, <span class="ruby-identifier">request</span>.<span class="ruby-identifier">uri</span> ]
+                        <span class="ruby-identifier">puts</span> <span class="ruby-string">&quot;POST payload: %s&quot;</span> <span class="ruby-operator">%</span> <span class="ruby-identifier">body</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">body</span>
+                        <span class="ruby-identifier">puts</span> <span class="ruby-string">&quot;Response:     %d: %s&quot;</span> <span class="ruby-operator">%</span> [ <span class="ruby-identifier">response</span>.<span class="ruby-identifier">code</span>, <span class="ruby-identifier">response</span> ]
+                <span class="ruby-keyword">end</span>
+
+                <span class="ruby-comment"># Check for errors</span>
+                <span class="ruby-keyword">self</span>.<span class="ruby-identifier">_check_errors</span>( <span class="ruby-identifier">response</span>, <span class="ruby-identifier">error_string</span> )
+
+                <span class="ruby-comment"># Success: Convert JSON to Ruby object and return it</span>
+                <span class="ruby-identifier">responsebody</span> = <span class="ruby-constant">JSON</span>.<span class="ruby-identifier">parse</span>(<span class="ruby-identifier">response</span>)[<span class="ruby-string">&quot;body&quot;</span>]
+                <span class="ruby-identifier">pp</span> <span class="ruby-identifier">responsebody</span> <span class="ruby-keyword">if</span> <span class="ruby-constant">VERBOSITY</span> <span class="ruby-operator">&gt;=</span> <span class="ruby-value">2</span> 
+                <span class="ruby-keyword">return</span> <span class="ruby-identifier">responsebody</span> 
         <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span></pre>
           </div>
@@ -322,7 +401,7 @@ headers:    { &quot;Authorization&quot; =&gt; @config[:auth_string] }</pre>
 
           
           <div class="method-source-code" id="auth_basic-source">
-            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 73</span>
+            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 88</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">auth_basic</span>
         <span class="ruby-comment"># Store Authentication string for Authorization Header in config</span>
         <span class="ruby-ivar">@config</span>[<span class="ruby-value">:auth_string</span>] = <span class="ruby-string">&quot;Basic %s&quot;</span> <span class="ruby-operator">%</span> <span class="ruby-constant">Base64</span>.<span class="ruby-identifier">urlsafe_encode64</span>(<span class="ruby-ivar">@config</span>[<span class="ruby-value">:username</span>] <span class="ruby-operator">+</span> <span class="ruby-string">&quot;:&quot;</span> <span class="ruby-operator">+</span> <span class="ruby-ivar">@config</span>[<span class="ruby-value">:password</span>])
@@ -368,11 +447,11 @@ headers:    { &quot;Authorization&quot; =&gt; @config[:auth_string] }</pre>
       </div>
 
     
-      <div id="method-i-delete_api_key" class="method-detail ">
+      <div id="method-i-auth_cryptomnio" class="method-detail ">
         
         <div class="method-heading">
-          <span class="method-name">delete_api_key</span><span
-            class="method-args">( key )</span>
+          <span class="method-name">auth_cryptomnio</span><span
+            class="method-args">( method, uripath )</span>
           
           <span class="method-click-advice">click to toggle source</span>
           
@@ -381,26 +460,31 @@ headers:    { &quot;Authorization&quot; =&gt; @config[:auth_string] }</pre>
 
         <div class="method-description">
           
-          
+          <p><a href="../../Cryptomnio.html">Cryptomnio</a> Key Authentication</p>
           
           
 
           
-          <div class="method-source-code" id="delete_api_key-source">
-            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 157</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">delete_api_key</span>( <span class="ruby-identifier">key</span> )
-        <span class="ruby-comment"># Delete a single exchange API key by key ID</span>
-        <span class="ruby-identifier">puts</span> <span class="ruby-string">&quot;Deleting key %d for exchange %s&quot;</span> <span class="ruby-operator">%</span> [ <span class="ruby-identifier">key</span>[<span class="ruby-string">&quot;keyId&quot;</span>], <span class="ruby-identifier">key</span>[<span class="ruby-string">&quot;exchange&quot;</span>] ] <span class="ruby-keyword">if</span> <span class="ruby-constant">DEBUG</span>
+          <div class="method-source-code" id="auth_cryptomnio-source">
+            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 125</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">auth_cryptomnio</span>( <span class="ruby-identifier">method</span>, <span class="ruby-identifier">uripath</span> )
+        <span class="ruby-identifier">puts</span> <span class="ruby-string">&quot;Building Authentication Credentials:&quot;</span> <span class="ruby-keyword">if</span> <span class="ruby-constant">DEBUG</span>
 
-        <span class="ruby-constant">RestClient</span>.<span class="ruby-identifier">delete</span>( <span class="ruby-ivar">@config</span>[<span class="ruby-value">:apiurl</span>] <span class="ruby-operator">+</span> <span class="ruby-string">&quot;/exchange-keys?keyId=&quot;</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">key</span>[<span class="ruby-string">&quot;keyId&quot;</span>] <span class="ruby-operator">+</span><span class="ruby-string">&quot;&amp;exchange=&quot;</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">key</span>[<span class="ruby-string">&quot;exchange&quot;</span>], { <span class="ruby-string">&quot;Authorization&quot;</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-ivar">@config</span>[<span class="ruby-value">:auth_string</span>]} ) <span class="ruby-keyword">do</span>
-                <span class="ruby-operator">|</span><span class="ruby-identifier">response</span>, <span class="ruby-identifier">request</span>, <span class="ruby-identifier">result</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span><span class="ruby-operator">|</span>
-                <span class="ruby-identifier">puts</span> <span class="ruby-string">&quot;%d: %s&quot;</span> <span class="ruby-operator">%</span> [ <span class="ruby-identifier">response</span>.<span class="ruby-identifier">code</span>, <span class="ruby-identifier">response</span> ] <span class="ruby-keyword">if</span> <span class="ruby-constant">DEBUG</span>
-                <span class="ruby-keyword">self</span>.<span class="ruby-identifier">_check_errors</span>( <span class="ruby-identifier">response</span>, <span class="ruby-string">&quot;Deletion of Cryptomnio stored Exchange Key id %d failed.&quot;</span> <span class="ruby-operator">%</span> <span class="ruby-identifier">key</span>[<span class="ruby-string">&quot;keyId&quot;</span>] )
+        <span class="ruby-comment"># Create concatenated method and base URL path string</span>
+        <span class="ruby-identifier">methodpath</span> = <span class="ruby-identifier">method</span>.<span class="ruby-identifier">to_s</span>.<span class="ruby-identifier">upcase</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">uripath</span> <span class="ruby-comment"># convert RestClient&#39;s method symbol to uppercase string</span>
+        <span class="ruby-identifier">puts</span> <span class="ruby-string">&quot;        Method+Path = %s&quot;</span> <span class="ruby-operator">%</span> <span class="ruby-identifier">methodpath</span> <span class="ruby-keyword">if</span> <span class="ruby-constant">DEBUG</span>
 
-                <span class="ruby-comment"># Success</span>
-                <span class="ruby-identifier">puts</span> <span class="ruby-identifier">response</span> <span class="ruby-keyword">if</span> <span class="ruby-constant">DEBUG</span>
-                <span class="ruby-keyword">return</span> <span class="ruby-keyword">true</span>
+        <span class="ruby-comment"># Create HMAC SHA-512 authentication hash of methodpath using secret key</span>
+        <span class="ruby-ivar">@config</span>[<span class="ruby-value">:auth_string</span>] = <span class="ruby-constant">Base64</span>.<span class="ruby-identifier">encode64</span>(<span class="ruby-constant">OpenSSL</span><span class="ruby-operator">::</span><span class="ruby-constant">HMAC</span>.<span class="ruby-identifier">digest</span>(<span class="ruby-string">&#39;sha512&#39;</span>, <span class="ruby-ivar">@config</span>[<span class="ruby-value">:secret_key</span>], <span class="ruby-identifier">methodpath</span>)).<span class="ruby-identifier">split</span>.<span class="ruby-identifier">join</span> <span class="ruby-comment"># .split.join is to remove &#39;/n&#39; inserted into signature by HMAC</span>
+
+        <span class="ruby-comment"># DEBUG Output</span>
+        <span class="ruby-keyword">if</span> <span class="ruby-constant">DEBUG</span>
+                <span class="ruby-identifier">puts</span> <span class="ruby-string">&quot;       Access-Key: %s&quot;</span> <span class="ruby-operator">%</span> <span class="ruby-ivar">@config</span>[<span class="ruby-value">:access_key</span>]
+                <span class="ruby-identifier">puts</span> <span class="ruby-string">&quot;       Signature:  %s&quot;</span> <span class="ruby-operator">%</span> <span class="ruby-ivar">@config</span>[<span class="ruby-value">:auth_string</span>]
+                <span class="ruby-identifier">puts</span>
         <span class="ruby-keyword">end</span>
+
+        <span class="ruby-keyword">return</span> <span class="ruby-ivar">@config</span>[<span class="ruby-value">:auth_string</span>]
 <span class="ruby-keyword">end</span></pre>
           </div>
           
@@ -412,10 +496,10 @@ headers:    { &quot;Authorization&quot; =&gt; @config[:auth_string] }</pre>
       </div>
 
     
-      <div id="method-i-delete_api_keys" class="method-detail ">
+      <div id="method-i-auth_cryptomnio_test" class="method-detail ">
         
         <div class="method-heading">
-          <span class="method-name">delete_api_keys</span><span
+          <span class="method-name">auth_cryptomnio_test</span><span
             class="method-args">()</span>
           
           <span class="method-click-advice">click to toggle source</span>
@@ -425,404 +509,33 @@ headers:    { &quot;Authorization&quot; =&gt; @config[:auth_string] }</pre>
 
         <div class="method-description">
           
-          <p>Delete all exchange API keys from <a
-href="../../Cryptomnio.html">Cryptomnio</a></p>
+          <p>Test method wrapper for <a href="../../Cryptomnio.html">Cryptomnio</a> Key
+Authentication</p>
           
           
 
           
-          <div class="method-source-code" id="delete_api_keys-source">
-            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 147</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">delete_api_keys</span>
-        <span class="ruby-comment"># Get list of stored exchange API keys</span>
-        <span class="ruby-identifier">keylist</span> = <span class="ruby-keyword">self</span>.<span class="ruby-identifier">get_all_exchange_keys</span>
+          <div class="method-source-code" id="auth_cryptomnio_test-source">
+            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 146</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">auth_cryptomnio_test</span>
+        <span class="ruby-comment"># TODO: Find better CMA test call to use</span>
+        <span class="ruby-identifier">method</span>   = <span class="ruby-value">:get</span> 
+        <span class="ruby-identifier">endpoint</span> = <span class="ruby-string">&quot;/venues&quot;</span>
+        <span class="ruby-comment">#endpoint = &quot;/nope&quot;</span>
+        <span class="ruby-identifier">uripath</span>  = <span class="ruby-constant">URI_VERSION</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">endpoint</span>
+        <span class="ruby-identifier">signature</span> = <span class="ruby-keyword">self</span>.<span class="ruby-identifier">auth_cryptomnio</span>( <span class="ruby-identifier">method</span>, <span class="ruby-identifier">uripath</span> )
 
-        <span class="ruby-identifier">keylist</span>[<span class="ruby-string">&quot;data&quot;</span>].<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span> <span class="ruby-identifier">key</span> <span class="ruby-operator">|</span>
-                <span class="ruby-keyword">self</span>.<span class="ruby-identifier">delete_api_key</span> <span class="ruby-identifier">key</span>
+        <span class="ruby-identifier">puts</span> <span class="ruby-string">&quot;Testing Cryptomnio Key authentication:&quot;</span> <span class="ruby-keyword">if</span> <span class="ruby-constant">DEBUG</span>
+        <span class="ruby-keyword">if</span> <span class="ruby-constant">DEBUG</span>
+                <span class="ruby-identifier">puts</span> <span class="ruby-string">&quot;       Requesting: %s %s%s&quot;</span> <span class="ruby-operator">%</span> [ <span class="ruby-identifier">method</span>, <span class="ruby-ivar">@config</span>[<span class="ruby-value">:apiurl</span>], <span class="ruby-identifier">uripath</span> ]
+                <span class="ruby-identifier">puts</span> <span class="ruby-string">&quot;       Access-Key: %s&quot;</span>      <span class="ruby-operator">%</span> <span class="ruby-ivar">@config</span>[<span class="ruby-value">:access_key</span>]
+                <span class="ruby-identifier">puts</span> <span class="ruby-string">&quot;       Signature:  %s&quot;</span>      <span class="ruby-operator">%</span> <span class="ruby-identifier">signature</span>
         <span class="ruby-keyword">end</span>
 
-<span class="ruby-keyword">end</span></pre>
-          </div>
-          
-        </div>
+        <span class="ruby-comment"># Test Authentication Call</span>
+        <span class="ruby-keyword">self</span>.<span class="ruby-identifier">_rest_call</span>( <span class="ruby-identifier">method</span>, <span class="ruby-identifier">uripath</span>, <span class="ruby-keyword">nil</span>, <span class="ruby-string">&quot;Cryptomnio Key Authentication test failed.&quot;</span> )
 
-        
-
-        
-      </div>
-
-    
-      <div id="method-i-get_all_exchange_keys" class="method-detail ">
-        
-        <div class="method-heading">
-          <span class="method-name">get_all_exchange_keys</span><span
-            class="method-args">()</span>
-          
-          <span class="method-click-advice">click to toggle source</span>
-          
-        </div>
-        
-
-        <div class="method-description">
-          
-          <p>Return list hash of all stored exchange keys</p>
-          
-          
-
-          
-          <div class="method-source-code" id="get_all_exchange_keys-source">
-            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 173</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">get_all_exchange_keys</span>
-        <span class="ruby-constant">RestClient</span>.<span class="ruby-identifier">get</span>( <span class="ruby-ivar">@config</span>[<span class="ruby-value">:apiurl</span>] <span class="ruby-operator">+</span> <span class="ruby-string">&quot;/exchange-keys&quot;</span>, { <span class="ruby-string">&quot;Authorization&quot;</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-ivar">@config</span>[<span class="ruby-value">:auth_string</span>]} ) <span class="ruby-keyword">do</span>
-                <span class="ruby-operator">|</span><span class="ruby-identifier">response</span>, <span class="ruby-identifier">request</span>, <span class="ruby-identifier">result</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span><span class="ruby-operator">|</span>
-                <span class="ruby-identifier">puts</span> <span class="ruby-string">&quot;%d: %s&quot;</span> <span class="ruby-operator">%</span> [ <span class="ruby-identifier">response</span>.<span class="ruby-identifier">code</span>, <span class="ruby-identifier">response</span> ] <span class="ruby-keyword">if</span> <span class="ruby-constant">DEBUG</span>
-                <span class="ruby-keyword">self</span>.<span class="ruby-identifier">_check_errors</span>( <span class="ruby-identifier">response</span>, <span class="ruby-string">&quot;Retrieval of Cryptomnio stored Exchange Keys failed.&quot;</span> )
-
-                <span class="ruby-comment"># Success</span>
-                <span class="ruby-identifier">puts</span> <span class="ruby-identifier">response</span> <span class="ruby-keyword">if</span> <span class="ruby-constant">DEBUG</span>
-                <span class="ruby-comment"># Return hash of all stored keys</span>
-                <span class="ruby-identifier">keylist</span> = <span class="ruby-constant">JSON</span>.<span class="ruby-identifier">parse</span>(<span class="ruby-identifier">response</span>)[<span class="ruby-string">&quot;data&quot;</span>]
-                <span class="ruby-identifier">puts</span> <span class="ruby-identifier">keylist</span>.<span class="ruby-identifier">inspect</span>
-                <span class="ruby-keyword">return</span> <span class="ruby-identifier">keylist</span>
-        <span class="ruby-keyword">end</span>
-<span class="ruby-keyword">end</span></pre>
-          </div>
-          
-        </div>
-
-        
-
-        
-      </div>
-
-    
-      <div id="method-i-order_cancel" class="method-detail ">
-        
-        <div class="method-heading">
-          <span class="method-name">order_cancel</span><span
-            class="method-args">( key, order_id )</span>
-          
-          <span class="method-click-advice">click to toggle source</span>
-          
-        </div>
-        
-
-        <div class="method-description">
-          
-          
-          
-          
-
-          
-          <div class="method-source-code" id="order_cancel-source">
-            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 235</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">order_cancel</span>( <span class="ruby-identifier">key</span>, <span class="ruby-identifier">order_id</span> )
-        <span class="ruby-identifier">uri</span> = <span class="ruby-string">&quot;%s/order?exchange=%s&amp;keyId=%s&amp;internalOrderId=%d&quot;</span> <span class="ruby-operator">%</span> [ <span class="ruby-ivar">@config</span>[<span class="ruby-value">:apiurl</span>], <span class="ruby-identifier">key</span>[<span class="ruby-string">&quot;exchange&quot;</span>], <span class="ruby-identifier">key</span>[<span class="ruby-string">&quot;keyId&quot;</span>], <span class="ruby-identifier">order_id</span> ]
-        <span class="ruby-identifier">puts</span> <span class="ruby-string">&quot;DELETE %s&quot;</span> <span class="ruby-operator">%</span> <span class="ruby-identifier">uri</span> <span class="ruby-keyword">if</span> <span class="ruby-constant">DEBUG</span>
-
-        <span class="ruby-constant">RestClient</span>.<span class="ruby-identifier">delete</span>( <span class="ruby-identifier">uri</span>, { <span class="ruby-string">&quot;Authorization&quot;</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-ivar">@config</span>[<span class="ruby-value">:auth_string</span>], <span class="ruby-string">&quot;Content-type&quot;</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-string">&quot;application/json&quot;</span> } ) <span class="ruby-keyword">do</span>
-                <span class="ruby-operator">|</span><span class="ruby-identifier">response</span>, <span class="ruby-identifier">request</span>, <span class="ruby-identifier">result</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span><span class="ruby-operator">|</span>
-
-                <span class="ruby-identifier">puts</span> <span class="ruby-string">&quot;%d: %s&quot;</span> <span class="ruby-operator">%</span> [ <span class="ruby-identifier">response</span>.<span class="ruby-identifier">code</span>, <span class="ruby-identifier">response</span> ] <span class="ruby-keyword">if</span> <span class="ruby-constant">DEBUG</span>
-
-                <span class="ruby-keyword">self</span>.<span class="ruby-identifier">_check_errors</span>( <span class="ruby-identifier">response</span>, <span class="ruby-string">&quot;Deletion of Cryptomnio order %d failed.&quot;</span> <span class="ruby-operator">%</span> <span class="ruby-identifier">order_id</span> )
-
-                <span class="ruby-comment"># Success</span>
-                <span class="ruby-keyword">return</span> <span class="ruby-keyword">true</span>
-        <span class="ruby-keyword">end</span>
-<span class="ruby-keyword">end</span></pre>
-          </div>
-          
-        </div>
-
-        
-
-        
-      </div>
-
-    
-      <div id="method-i-order_create" class="method-detail ">
-        
-        <div class="method-heading">
-          <span class="method-name">order_create</span><span
-            class="method-args">( key, side, order_type, pair, volume, price = nil )</span>
-          
-          <span class="method-click-advice">click to toggle source</span>
-          
-        </div>
-        
-
-        <div class="method-description">
-          
-          
-          
-          
-
-          
-          <div class="method-source-code" id="order_create-source">
-            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 188</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">order_create</span>( <span class="ruby-identifier">key</span>, <span class="ruby-identifier">side</span>, <span class="ruby-identifier">order_type</span>, <span class="ruby-identifier">pair</span>, <span class="ruby-identifier">volume</span>, <span class="ruby-identifier">price</span> = <span class="ruby-keyword">nil</span> )
-        <span class="ruby-comment"># Build Order Payload</span>
-        <span class="ruby-identifier">payload</span> = {}
-        <span class="ruby-identifier">payload</span>[<span class="ruby-string">&quot;exchange&quot;</span>]  = <span class="ruby-identifier">key</span>[<span class="ruby-string">&quot;exchange&quot;</span>]
-        <span class="ruby-identifier">payload</span>[<span class="ruby-string">&quot;keyId&quot;</span>]     = <span class="ruby-identifier">key</span>[<span class="ruby-string">&quot;keyId&quot;</span>]
-        <span class="ruby-identifier">payload</span>[<span class="ruby-string">&quot;orderType&quot;</span>] = <span class="ruby-identifier">order_type</span>
-        <span class="ruby-identifier">payload</span>[<span class="ruby-string">&quot;price&quot;</span>]     = <span class="ruby-identifier">price</span>.<span class="ruby-identifier">to_s</span>      <span class="ruby-keyword">if</span> <span class="ruby-identifier">price</span>
-        <span class="ruby-identifier">payload</span>[<span class="ruby-string">&quot;side&quot;</span>]      = <span class="ruby-identifier">side</span>
-        <span class="ruby-identifier">payload</span>[<span class="ruby-string">&quot;volume&quot;</span>]    = <span class="ruby-identifier">volume</span>.<span class="ruby-identifier">to_s</span>
-        <span class="ruby-identifier">payload</span>[<span class="ruby-string">&quot;pair&quot;</span>]      = <span class="ruby-identifier">pair</span>
-
-        <span class="ruby-identifier">uri</span> = <span class="ruby-string">&quot;%s/order&quot;</span> <span class="ruby-operator">%</span> <span class="ruby-ivar">@config</span>[<span class="ruby-value">:apiurl</span>]
-        <span class="ruby-identifier">puts</span> <span class="ruby-string">&quot;POST %s&quot;</span> <span class="ruby-operator">%</span> <span class="ruby-identifier">uri</span> <span class="ruby-keyword">if</span> <span class="ruby-constant">DEBUG</span>
-        <span class="ruby-identifier">puts</span> <span class="ruby-constant">JSON</span>.<span class="ruby-identifier">generate</span>(<span class="ruby-identifier">payload</span>) <span class="ruby-keyword">if</span> <span class="ruby-constant">DEBUG</span>
-
-        <span class="ruby-constant">RestClient</span>.<span class="ruby-identifier">post</span>( <span class="ruby-identifier">uri</span>, <span class="ruby-constant">JSON</span>.<span class="ruby-identifier">generate</span>(<span class="ruby-identifier">payload</span>), { <span class="ruby-string">&quot;Authorization&quot;</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-ivar">@config</span>[<span class="ruby-value">:auth_string</span>], <span class="ruby-string">&quot;Content-type&quot;</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-string">&quot;application/json&quot;</span> } ) <span class="ruby-keyword">do</span>
-                <span class="ruby-operator">|</span><span class="ruby-identifier">response</span>, <span class="ruby-identifier">request</span>, <span class="ruby-identifier">result</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span><span class="ruby-operator">|</span>
-                <span class="ruby-identifier">puts</span> <span class="ruby-string">&quot;%d: %s&quot;</span> <span class="ruby-operator">%</span> [ <span class="ruby-identifier">response</span>.<span class="ruby-identifier">code</span>, <span class="ruby-identifier">response</span> ] <span class="ruby-keyword">if</span> <span class="ruby-constant">DEBUG</span>
-                <span class="ruby-keyword">self</span>.<span class="ruby-identifier">_check_errors</span>( <span class="ruby-identifier">response</span>, <span class="ruby-string">&quot;Cryptomnio Exchange order for exchange %s failed.&quot;</span> <span class="ruby-operator">%</span> <span class="ruby-identifier">payload</span>[<span class="ruby-string">&quot;exchange&quot;</span>] )
-
-                <span class="ruby-identifier">reshash</span> = <span class="ruby-constant">JSON</span>.<span class="ruby-identifier">parse</span>(<span class="ruby-identifier">response</span>)
-
-                <span class="ruby-comment"># Success</span>
-                <span class="ruby-identifier">puts</span> <span class="ruby-identifier">response</span> <span class="ruby-keyword">if</span> <span class="ruby-constant">DEBUG</span>
-                <span class="ruby-identifier">puts</span> <span class="ruby-identifier">reshash</span>.<span class="ruby-identifier">inspect</span> <span class="ruby-keyword">if</span> <span class="ruby-constant">DEBUG</span>
-                <span class="ruby-comment"># Return Cryptomnio Order ID</span>
-                <span class="ruby-keyword">return</span> <span class="ruby-identifier">reshash</span>[<span class="ruby-string">&quot;data&quot;</span>].<span class="ruby-identifier">to_i</span>
-        <span class="ruby-keyword">end</span>
-<span class="ruby-keyword">end</span></pre>
-          </div>
-          
-        </div>
-
-        
-
-        
-      </div>
-
-    
-      <div id="method-i-order_get" class="method-detail ">
-        
-        <div class="method-heading">
-          <span class="method-name">order_get</span><span
-            class="method-args">( key, order_id )</span>
-          
-          <span class="method-click-advice">click to toggle source</span>
-          
-        </div>
-        
-
-        <div class="method-description">
-          
-          
-          
-          
-
-          
-          <div class="method-source-code" id="order_get-source">
-            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 218</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">order_get</span>( <span class="ruby-identifier">key</span>, <span class="ruby-identifier">order_id</span> )
-        <span class="ruby-identifier">uri</span> = <span class="ruby-string">&quot;%s/order?exchange=%s&amp;keyId=%s&amp;internalOrderId=%d&quot;</span> <span class="ruby-operator">%</span> [ <span class="ruby-ivar">@config</span>[<span class="ruby-value">:apiurl</span>], <span class="ruby-identifier">key</span>[<span class="ruby-string">&quot;exchange&quot;</span>], <span class="ruby-identifier">key</span>[<span class="ruby-string">&quot;keyId&quot;</span>], <span class="ruby-identifier">order_id</span> ]
-        <span class="ruby-identifier">puts</span> <span class="ruby-string">&quot;GET %s&quot;</span> <span class="ruby-operator">%</span> <span class="ruby-identifier">uri</span> <span class="ruby-keyword">if</span> <span class="ruby-constant">DEBUG</span>
-
-        <span class="ruby-constant">RestClient</span>.<span class="ruby-identifier">get</span>( <span class="ruby-identifier">uri</span>, { <span class="ruby-string">&quot;Authorization&quot;</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-ivar">@config</span>[<span class="ruby-value">:auth_string</span>], <span class="ruby-string">&quot;Content-type&quot;</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-string">&quot;application/json&quot;</span> } ) <span class="ruby-keyword">do</span>
-                <span class="ruby-operator">|</span><span class="ruby-identifier">response</span>, <span class="ruby-identifier">request</span>, <span class="ruby-identifier">result</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span><span class="ruby-operator">|</span>
-                <span class="ruby-identifier">puts</span> <span class="ruby-string">&quot;%d: %s&quot;</span> <span class="ruby-operator">%</span> [ <span class="ruby-identifier">response</span>.<span class="ruby-identifier">code</span>, <span class="ruby-identifier">response</span> ] <span class="ruby-keyword">if</span> <span class="ruby-constant">DEBUG</span>
-                <span class="ruby-keyword">self</span>.<span class="ruby-identifier">_check_errors</span>( <span class="ruby-identifier">response</span>, <span class="ruby-string">&quot;Retrieval of Cryptomnio order information for %d failed.&quot;</span> <span class="ruby-operator">%</span> <span class="ruby-identifier">order_id</span> )
-
-                <span class="ruby-comment"># Success</span>
-                <span class="ruby-identifier">order_info</span> = <span class="ruby-constant">JSON</span>.<span class="ruby-identifier">parse</span>(<span class="ruby-identifier">response</span>)[<span class="ruby-string">&quot;data&quot;</span>]
-                <span class="ruby-identifier">puts</span> <span class="ruby-identifier">order_info</span>.<span class="ruby-identifier">inspect</span> <span class="ruby-keyword">if</span> <span class="ruby-constant">DEBUG</span>
-                <span class="ruby-comment"># Return Order Info Hash</span>
-                <span class="ruby-keyword">return</span> <span class="ruby-identifier">order_info</span>
-        <span class="ruby-keyword">end</span>
-<span class="ruby-keyword">end</span></pre>
-          </div>
-          
-        </div>
-
-        
-
-        
-      </div>
-
-    
-      <div id="method-i-orders_active_get" class="method-detail ">
-        
-        <div class="method-heading">
-          <span class="method-name">orders_active_get</span><span
-            class="method-args">( key )</span>
-          
-          <span class="method-click-advice">click to toggle source</span>
-          
-        </div>
-        
-
-        <div class="method-description">
-          
-          
-          
-          
-
-          
-          <div class="method-source-code" id="orders_active_get-source">
-            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 251</span>
-        <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">orders_active_get</span>( <span class="ruby-identifier">key</span> )
-                <span class="ruby-identifier">uri</span> = <span class="ruby-string">&quot;%s/orders/active?exchange=%s&amp;keyId=%s&quot;</span> <span class="ruby-operator">%</span> [ <span class="ruby-ivar">@config</span>[<span class="ruby-value">:apiurl</span>], <span class="ruby-identifier">key</span>[<span class="ruby-string">&quot;exchange&quot;</span>], <span class="ruby-identifier">key</span>[<span class="ruby-string">&quot;keyId&quot;</span>] ]
-                <span class="ruby-identifier">puts</span> <span class="ruby-string">&quot;GET %s&quot;</span> <span class="ruby-operator">%</span> <span class="ruby-identifier">uri</span> <span class="ruby-keyword">if</span> <span class="ruby-constant">DEBUG</span>
-
-                <span class="ruby-constant">RestClient</span>.<span class="ruby-identifier">get</span>( <span class="ruby-identifier">uri</span>, { <span class="ruby-string">&quot;Authorization&quot;</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-ivar">@config</span>[<span class="ruby-value">:auth_string</span>], <span class="ruby-string">&quot;Content-type&quot;</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-string">&quot;application/json&quot;</span> } ) <span class="ruby-keyword">do</span>
-                        <span class="ruby-operator">|</span><span class="ruby-identifier">response</span>, <span class="ruby-identifier">request</span>, <span class="ruby-identifier">result</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span><span class="ruby-operator">|</span>
-                        <span class="ruby-identifier">puts</span> <span class="ruby-string">&quot;%d: %s&quot;</span> <span class="ruby-operator">%</span> [ <span class="ruby-identifier">response</span>.<span class="ruby-identifier">code</span>, <span class="ruby-identifier">response</span> ] <span class="ruby-keyword">if</span> <span class="ruby-constant">DEBUG</span>
-                        <span class="ruby-keyword">self</span>.<span class="ruby-identifier">_check_errors</span>( <span class="ruby-identifier">response</span>, <span class="ruby-string">&quot;Retrieval of Cryptomnio active orders information failed.&quot;</span> )
-
-                        <span class="ruby-comment"># Success</span>
-                        <span class="ruby-identifier">orders_info</span> = <span class="ruby-constant">JSON</span>.<span class="ruby-identifier">parse</span>(<span class="ruby-identifier">response</span>)[<span class="ruby-string">&quot;data&quot;</span>]
-<span class="ruby-comment">#                       puts JSON.pretty_generate(orders_info)</span>
-                        <span class="ruby-identifier">puts</span> <span class="ruby-identifier">orders_info</span>.<span class="ruby-identifier">inspect</span> <span class="ruby-keyword">if</span> <span class="ruby-constant">DEBUG</span>
-                        <span class="ruby-comment"># Return Orders Info Hash</span>
-                        <span class="ruby-keyword">return</span> <span class="ruby-identifier">orders_info</span>
-                <span class="ruby-keyword">end</span>
-        <span class="ruby-keyword">end</span></pre>
-          </div>
-          
-        </div>
-
-        
-
-        
-      </div>
-
-    
-      <div id="method-i-orders_history_get" class="method-detail ">
-        
-        <div class="method-heading">
-          <span class="method-name">orders_history_get</span><span
-            class="method-args">( key )</span>
-          
-          <span class="method-click-advice">click to toggle source</span>
-          
-        </div>
-        
-
-        <div class="method-description">
-          
-          
-          
-          
-
-          
-          <div class="method-source-code" id="orders_history_get-source">
-            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 269</span>
-        <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">orders_history_get</span>( <span class="ruby-identifier">key</span> )
-                <span class="ruby-identifier">uri</span> = <span class="ruby-string">&quot;%s/orders/history?exchange=%s&amp;keyId=%s&quot;</span> <span class="ruby-operator">%</span> [ <span class="ruby-ivar">@config</span>[<span class="ruby-value">:apiurl</span>], <span class="ruby-identifier">key</span>[<span class="ruby-string">&quot;exchange&quot;</span>], <span class="ruby-identifier">key</span>[<span class="ruby-string">&quot;keyId&quot;</span>] ]
-                <span class="ruby-identifier">puts</span> <span class="ruby-string">&quot;GET %s&quot;</span> <span class="ruby-operator">%</span> <span class="ruby-identifier">uri</span> <span class="ruby-keyword">if</span> <span class="ruby-constant">DEBUG</span>
-
-                <span class="ruby-constant">RestClient</span>.<span class="ruby-identifier">get</span>( <span class="ruby-identifier">uri</span>, { <span class="ruby-string">&quot;Authorization&quot;</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-ivar">@config</span>[<span class="ruby-value">:auth_string</span>], <span class="ruby-string">&quot;Content-type&quot;</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-string">&quot;application/json&quot;</span> } ) <span class="ruby-keyword">do</span>
-                        <span class="ruby-operator">|</span><span class="ruby-identifier">response</span>, <span class="ruby-identifier">request</span>, <span class="ruby-identifier">result</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span><span class="ruby-operator">|</span>
-                        <span class="ruby-identifier">puts</span> <span class="ruby-string">&quot;%d: %s&quot;</span> <span class="ruby-operator">%</span> [ <span class="ruby-identifier">response</span>.<span class="ruby-identifier">code</span>, <span class="ruby-identifier">response</span> ] <span class="ruby-keyword">if</span> <span class="ruby-constant">DEBUG</span>
-                        <span class="ruby-keyword">self</span>.<span class="ruby-identifier">_check_errors</span>( <span class="ruby-identifier">response</span>, <span class="ruby-string">&quot;Retrieval of Cryptomnio closed orders information failed.&quot;</span> )
-
-                        <span class="ruby-comment"># Success</span>
-                        <span class="ruby-identifier">orders_info</span> = <span class="ruby-constant">JSON</span>.<span class="ruby-identifier">parse</span>(<span class="ruby-identifier">response</span>)[<span class="ruby-string">&quot;data&quot;</span>]
-<span class="ruby-comment">#                       puts JSON.pretty_generate(orders_info)</span>
-                        <span class="ruby-identifier">puts</span> <span class="ruby-identifier">orders_info</span>.<span class="ruby-identifier">inspect</span> <span class="ruby-keyword">if</span> <span class="ruby-constant">DEBUG</span>
-                        <span class="ruby-comment"># Return Orders Info Hash</span>
-                        <span class="ruby-keyword">return</span> <span class="ruby-identifier">orders_info</span>
-                <span class="ruby-keyword">end</span>
-        <span class="ruby-keyword">end</span></pre>
-          </div>
-          
-        </div>
-
-        
-
-        
-      </div>
-
-    
-      <div id="method-i-upload_api_key" class="method-detail ">
-        
-        <div class="method-heading">
-          <span class="method-name">upload_api_key</span><span
-            class="method-args">( payload )</span>
-          
-          <span class="method-click-advice">click to toggle source</span>
-          
-        </div>
-        
-
-        <div class="method-description">
-          
-          
-          
-          
-
-          
-          <div class="method-source-code" id="upload_api_key-source">
-            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 124</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">upload_api_key</span>( <span class="ruby-identifier">payload</span> ) 
-        <span class="ruby-comment"># Upload and store a single exchange API key provided as a hash argument</span>
-        <span class="ruby-identifier">puts</span> <span class="ruby-string">&quot;POST %s/exchange-keys&quot;</span> <span class="ruby-operator">%</span> <span class="ruby-ivar">@config</span>[<span class="ruby-value">:apiurl</span>] <span class="ruby-keyword">if</span> <span class="ruby-constant">DEBUG</span>
-        <span class="ruby-identifier">puts</span> <span class="ruby-constant">JSON</span>.<span class="ruby-identifier">generate</span>(<span class="ruby-identifier">payload</span>) <span class="ruby-keyword">if</span> <span class="ruby-constant">DEBUG</span>
-
-        <span class="ruby-constant">RestClient</span>.<span class="ruby-identifier">post</span>( <span class="ruby-ivar">@config</span>[<span class="ruby-value">:apiurl</span>]<span class="ruby-operator">+</span><span class="ruby-string">&quot;/exchange-keys&quot;</span>, <span class="ruby-constant">JSON</span>.<span class="ruby-identifier">generate</span>(<span class="ruby-identifier">payload</span>), { <span class="ruby-string">&quot;Authorization&quot;</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-ivar">@config</span>[<span class="ruby-value">:auth_string</span>], <span class="ruby-string">&quot;Content-type&quot;</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-string">&quot;application/json&quot;</span> } ) <span class="ruby-keyword">do</span>
-                <span class="ruby-operator">|</span><span class="ruby-identifier">response</span>, <span class="ruby-identifier">request</span>, <span class="ruby-identifier">result</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span><span class="ruby-operator">|</span>
-
-                <span class="ruby-identifier">puts</span> <span class="ruby-string">&quot;%d: %s&quot;</span> <span class="ruby-operator">%</span> [ <span class="ruby-identifier">response</span>.<span class="ruby-identifier">code</span>, <span class="ruby-identifier">response</span> ] <span class="ruby-keyword">if</span> <span class="ruby-constant">DEBUG</span>
-                <span class="ruby-identifier">reshash</span> = <span class="ruby-constant">JSON</span>.<span class="ruby-identifier">parse</span>(<span class="ruby-identifier">response</span>)
-
-                <span class="ruby-keyword">case</span> <span class="ruby-identifier">response</span>.<span class="ruby-identifier">code</span>
-                <span class="ruby-keyword">when</span> <span class="ruby-operator">!</span><span class="ruby-value">200</span>
-                        <span class="ruby-identifier">raise</span> <span class="ruby-string">&quot;Cryptomnio Exchange Key for exchange %s storage failed.&quot;</span> <span class="ruby-operator">%</span> <span class="ruby-identifier">payload</span>[<span class="ruby-string">&quot;exchange&quot;</span>]
-                <span class="ruby-keyword">else</span>
-                        <span class="ruby-identifier">raise</span> <span class="ruby-string">&quot;Cryptomnio Exchange Key for exchange %s storage failed.&quot;</span> <span class="ruby-operator">%</span> <span class="ruby-identifier">payload</span>[<span class="ruby-string">&quot;exchange&quot;</span>] <span class="ruby-keyword">if</span> <span class="ruby-identifier">reshash</span>[<span class="ruby-string">&quot;code&quot;</span>] <span class="ruby-operator">!=</span> <span class="ruby-string">&quot;OK&quot;</span>
-                <span class="ruby-keyword">end</span>
-
-                <span class="ruby-keyword">return</span> <span class="ruby-keyword">true</span>
-        <span class="ruby-keyword">end</span>
-<span class="ruby-keyword">end</span></pre>
-          </div>
-          
-        </div>
-
-        
-
-        
-      </div>
-
-    
-      <div id="method-i-upload_api_keys" class="method-detail ">
-        
-        <div class="method-heading">
-          <span class="method-name">upload_api_keys</span><span
-            class="method-args">()</span>
-          
-          <span class="method-click-advice">click to toggle source</span>
-          
-        </div>
-        
-
-        <div class="method-description">
-          
-          
-          
-          
-
-          
-          <div class="method-source-code" id="upload_api_keys-source">
-            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 109</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">upload_api_keys</span>
-        <span class="ruby-comment"># Upload and store exchange API key(s) provided in config</span>
-        <span class="ruby-keyword">for</span> <span class="ruby-identifier">cred</span> <span class="ruby-keyword">in</span> <span class="ruby-ivar">@config</span>[<span class="ruby-value">:apikeys</span>] <span class="ruby-keyword">do</span>
-                <span class="ruby-identifier">payload</span> = {}
-                <span class="ruby-identifier">payload</span>[<span class="ruby-string">&quot;exchange&quot;</span>]   = <span class="ruby-identifier">cred</span>[<span class="ruby-value">:exchange</span>]
-                <span class="ruby-identifier">payload</span>[<span class="ruby-string">&quot;key&quot;</span>]        = <span class="ruby-identifier">cred</span>[<span class="ruby-value">:key</span>]
-                <span class="ruby-identifier">payload</span>[<span class="ruby-string">&quot;secret&quot;</span>]     = <span class="ruby-identifier">cred</span>[<span class="ruby-value">:secret</span>]
-                <span class="ruby-identifier">payload</span>[<span class="ruby-string">&quot;passphrase&quot;</span>] = <span class="ruby-identifier">cred</span>[<span class="ruby-value">:passphrase</span>] <span class="ruby-keyword">if</span> <span class="ruby-identifier">cred</span>[<span class="ruby-value">:passphrase</span>]
-                <span class="ruby-identifier">payload</span>[<span class="ruby-string">&quot;clientid&quot;</span>]   = <span class="ruby-identifier">cred</span>[<span class="ruby-value">:clientid</span>]   <span class="ruby-keyword">if</span> <span class="ruby-identifier">cred</span>[<span class="ruby-value">:clientid</span>]
-
-                <span class="ruby-keyword">self</span>.<span class="ruby-identifier">upload_api_key</span> <span class="ruby-identifier">payload</span>
-        <span class="ruby-keyword">end</span>
+        <span class="ruby-comment"># Success</span>
         <span class="ruby-keyword">return</span> <span class="ruby-keyword">true</span>
 <span class="ruby-keyword">end</span></pre>
           </div>
@@ -835,11 +548,11 @@ href="../../Cryptomnio.html">Cryptomnio</a></p>
       </div>
 
     
-      <div id="method-i-wallet_get" class="method-detail ">
+      <div id="method-i-create_venue_account_order_limit" class="method-detail ">
         
         <div class="method-heading">
-          <span class="method-name">wallet_get</span><span
-            class="method-args">( key )</span>
+          <span class="method-name">create_venue_account_order_limit</span><span
+            class="method-args">( venue, accountid, venuekeyid, side, quantity, price, market )</span>
           
           <span class="method-click-advice">click to toggle source</span>
           
@@ -848,33 +561,391 @@ href="../../Cryptomnio.html">Cryptomnio</a></p>
 
         <div class="method-description">
           
-          
+          <p>Create a new limit order under a venue account</p>
           
           
 
           
-          <div class="method-source-code" id="wallet_get-source">
-            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 287</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">wallet_get</span>( <span class="ruby-identifier">key</span> )
-        <span class="ruby-identifier">uri</span> = <span class="ruby-string">&quot;%s/wallet?exchange=%s&amp;keyId=%s&quot;</span> <span class="ruby-operator">%</span> [ <span class="ruby-ivar">@config</span>[<span class="ruby-value">:apiurl</span>], <span class="ruby-identifier">key</span>[<span class="ruby-string">&quot;exchange&quot;</span>], <span class="ruby-identifier">key</span>[<span class="ruby-string">&quot;keyId&quot;</span>] ]
-        <span class="ruby-identifier">puts</span> <span class="ruby-string">&quot;GET %s&quot;</span> <span class="ruby-operator">%</span> <span class="ruby-identifier">uri</span> <span class="ruby-keyword">if</span> <span class="ruby-constant">DEBUG</span>
+          <div class="method-source-code" id="create_venue_account_order_limit-source">
+            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 278</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">create_venue_account_order_limit</span>( <span class="ruby-identifier">venue</span>, <span class="ruby-identifier">accountid</span>, <span class="ruby-identifier">venuekeyid</span>, <span class="ruby-identifier">side</span>, <span class="ruby-identifier">quantity</span>, <span class="ruby-identifier">price</span>, <span class="ruby-identifier">market</span> )
+        <span class="ruby-identifier">uripath</span>  = <span class="ruby-string">&quot;/venues/exchanges/&quot;</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">venue</span> <span class="ruby-operator">+</span> <span class="ruby-string">&quot;/accounts/&quot;</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">accountid</span> <span class="ruby-operator">+</span> <span class="ruby-string">&quot;/orders&quot;</span>
+        <span class="ruby-identifier">errormsg</span> = <span class="ruby-string">&quot;Creation of new limit order for account %s failed.&quot;</span> <span class="ruby-operator">%</span> <span class="ruby-identifier">accountid</span>
+        <span class="ruby-identifier">body</span>     = {
+                <span class="ruby-string">&quot;venue&quot;</span>      <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">venue</span>,
+                <span class="ruby-string">&quot;venueKeyId&quot;</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">venuekeyid</span>,
+                <span class="ruby-string">&quot;orderType&quot;</span>  <span class="ruby-operator">=&gt;</span> <span class="ruby-string">&quot;limit&quot;</span>,
+                <span class="ruby-string">&quot;side&quot;</span>       <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">side</span>,
+                <span class="ruby-string">&quot;quantity&quot;</span>   <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">quantity</span>,
+                <span class="ruby-string">&quot;price&quot;</span>      <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">price</span>,
+                <span class="ruby-string">&quot;market&quot;</span>     <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">market</span>
+        }
+        <span class="ruby-keyword">return</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier">_rest_call</span>( <span class="ruby-value">:post</span>, <span class="ruby-identifier">uripath</span>, <span class="ruby-keyword">nil</span>, <span class="ruby-identifier">errormsg</span>, <span class="ruby-identifier">body</span>.<span class="ruby-identifier">to_json</span> )
+<span class="ruby-keyword">end</span></pre>
+          </div>
+          
+        </div>
 
-        <span class="ruby-constant">RestClient</span>.<span class="ruby-identifier">get</span>( <span class="ruby-identifier">uri</span>, { <span class="ruby-string">&quot;Authorization&quot;</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-ivar">@config</span>[<span class="ruby-value">:auth_string</span>], <span class="ruby-string">&quot;Content-type&quot;</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-string">&quot;application/json&quot;</span> } ) <span class="ruby-keyword">do</span>
-                <span class="ruby-operator">|</span><span class="ruby-identifier">response</span>, <span class="ruby-identifier">request</span>, <span class="ruby-identifier">result</span>, <span class="ruby-operator">&amp;</span><span class="ruby-identifier">block</span><span class="ruby-operator">|</span>
-                <span class="ruby-identifier">puts</span> <span class="ruby-string">&quot;%d: %s&quot;</span> <span class="ruby-operator">%</span> [ <span class="ruby-identifier">response</span>.<span class="ruby-identifier">code</span>, <span class="ruby-identifier">response</span> ] <span class="ruby-keyword">if</span> <span class="ruby-constant">DEBUG</span>
-                <span class="ruby-keyword">self</span>.<span class="ruby-identifier">_check_errors</span>( <span class="ruby-identifier">response</span>, <span class="ruby-string">&quot;Retrieval of Cryptomnio wallet information for key %d failed.&quot;</span> <span class="ruby-operator">%</span> <span class="ruby-identifier">key</span>[<span class="ruby-string">&quot;keyId&quot;</span>])
+        
 
-                <span class="ruby-comment"># Success</span>
-                <span class="ruby-identifier">balances</span> = <span class="ruby-constant">JSON</span>.<span class="ruby-identifier">parse</span>(<span class="ruby-identifier">response</span>)[<span class="ruby-string">&quot;data&quot;</span>][<span class="ruby-string">&quot;balances&quot;</span>]
-                <span class="ruby-identifier">puts</span> <span class="ruby-identifier">balances</span>.<span class="ruby-identifier">inspect</span> <span class="ruby-keyword">if</span> <span class="ruby-constant">DEBUG</span>
-                <span class="ruby-comment"># Return Wallet Info hash of hashes</span>
-                <span class="ruby-identifier">wallet_info</span> = {}
-                <span class="ruby-identifier">balances</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">currency</span><span class="ruby-operator">|</span>
-                        <span class="ruby-identifier">wallet_info</span>[<span class="ruby-identifier">currency</span>[<span class="ruby-string">&quot;currency&quot;</span>]] = <span class="ruby-identifier">currency</span>
-                <span class="ruby-keyword">end</span>
-                <span class="ruby-identifier">puts</span> <span class="ruby-identifier">wallet_info</span>.<span class="ruby-identifier">inspect</span> <span class="ruby-keyword">if</span> <span class="ruby-constant">DEBUG</span>
-                <span class="ruby-keyword">return</span> <span class="ruby-identifier">wallet_info</span>
+        
+      </div>
+
+    
+      <div id="method-i-create_venue_account_order_market" class="method-detail ">
+        
+        <div class="method-heading">
+          <span class="method-name">create_venue_account_order_market</span><span
+            class="method-args">( venue, accountid, venuekeyid, side, quantity, market )</span>
+          
+          <span class="method-click-advice">click to toggle source</span>
+          
+        </div>
+        
+
+        <div class="method-description">
+          
+          <p>Create a new market order under a venue account</p>
+          
+          
+
+          
+          <div class="method-source-code" id="create_venue_account_order_market-source">
+            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 263</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">create_venue_account_order_market</span>( <span class="ruby-identifier">venue</span>, <span class="ruby-identifier">accountid</span>, <span class="ruby-identifier">venuekeyid</span>, <span class="ruby-identifier">side</span>, <span class="ruby-identifier">quantity</span>, <span class="ruby-identifier">market</span> )
+        <span class="ruby-identifier">uripath</span>  = <span class="ruby-string">&quot;/venues/exchanges/&quot;</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">venue</span> <span class="ruby-operator">+</span> <span class="ruby-string">&quot;/accounts/&quot;</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">accountid</span> <span class="ruby-operator">+</span> <span class="ruby-string">&quot;/orders&quot;</span>
+        <span class="ruby-identifier">errormsg</span> = <span class="ruby-string">&quot;Creation of new market order for account %s failed.&quot;</span> <span class="ruby-operator">%</span> <span class="ruby-identifier">accountid</span>
+        <span class="ruby-identifier">body</span>     = {
+                <span class="ruby-string">&quot;venue&quot;</span>      <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">venue</span>,
+                <span class="ruby-string">&quot;venueKeyId&quot;</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">venuekeyid</span>,
+                <span class="ruby-string">&quot;orderType&quot;</span>  <span class="ruby-operator">=&gt;</span> <span class="ruby-string">&quot;market&quot;</span>,
+                <span class="ruby-string">&quot;side&quot;</span>       <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">side</span>,
+                <span class="ruby-string">&quot;quantity&quot;</span>   <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">quantity</span>,
+                <span class="ruby-string">&quot;market&quot;</span>     <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">market</span>
+        }
+        <span class="ruby-keyword">return</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier">_rest_call</span>( <span class="ruby-value">:post</span>, <span class="ruby-identifier">uripath</span>, <span class="ruby-keyword">nil</span>, <span class="ruby-identifier">errormsg</span>, <span class="ruby-identifier">body</span>.<span class="ruby-identifier">to_json</span> )
+<span class="ruby-keyword">end</span></pre>
+          </div>
+          
+        </div>
+
+        
+
+        
+      </div>
+
+    
+      <div id="method-i-delete_venue_account_order" class="method-detail ">
+        
+        <div class="method-heading">
+          <span class="method-name">delete_venue_account_order</span><span
+            class="method-args">( venue, accountid, venuekeyid, orderid )</span>
+          
+          <span class="method-click-advice">click to toggle source</span>
+          
+        </div>
+        
+
+        <div class="method-description">
+          
+          <p>Delete (cancel) a venue account&#39;s open order</p>
+          
+          
+
+          
+          <div class="method-source-code" id="delete_venue_account_order-source">
+            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 294</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">delete_venue_account_order</span>( <span class="ruby-identifier">venue</span>, <span class="ruby-identifier">accountid</span>, <span class="ruby-identifier">venuekeyid</span>, <span class="ruby-identifier">orderid</span> )
+        <span class="ruby-identifier">uripath</span>   = <span class="ruby-string">&quot;/venues/exchanges/&quot;</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">venue</span> <span class="ruby-operator">+</span> <span class="ruby-string">&quot;/accounts/&quot;</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">accountid</span> <span class="ruby-operator">+</span> <span class="ruby-string">&quot;/orders/&quot;</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">orderid</span>
+        <span class="ruby-identifier">uriparams</span> = <span class="ruby-string">&quot;venueKeyId=&quot;</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">venuekeyid</span> 
+        <span class="ruby-identifier">errormsg</span>  = <span class="ruby-string">&quot;Cancellation of venue account&#39;s order %s for account %s failed.&quot;</span> <span class="ruby-operator">%</span> [<span class="ruby-identifier">orderid</span>, <span class="ruby-identifier">accountid</span>]
+        <span class="ruby-keyword">return</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier">_rest_call</span>( <span class="ruby-value">:delete</span>, <span class="ruby-identifier">uripath</span>, <span class="ruby-identifier">uriparams</span>, <span class="ruby-identifier">errormsg</span> )
+<span class="ruby-keyword">end</span></pre>
+          </div>
+          
+        </div>
+
+        
+
+        
+      </div>
+
+    
+      <div id="method-i-retrieve_venue_account" class="method-detail ">
+        
+        <div class="method-heading">
+          <span class="method-name">retrieve_venue_account</span><span
+            class="method-args">( venue, accountid )</span>
+          
+          <span class="method-click-advice">click to toggle source</span>
+          
+        </div>
+        
+
+        <div class="method-description">
+          
+          <p>Return a hash of a venue account</p>
+          
+          
+
+          
+          <div class="method-source-code" id="retrieve_venue_account-source">
+            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 228</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">retrieve_venue_account</span>( <span class="ruby-identifier">venue</span>, <span class="ruby-identifier">accountid</span> )
+        <span class="ruby-identifier">uripath</span>   = <span class="ruby-string">&quot;/venues/&quot;</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">venue</span> <span class="ruby-operator">+</span> <span class="ruby-string">&quot;/accounts/&quot;</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">accountid</span>
+        <span class="ruby-identifier">errormsg</span>  =  <span class="ruby-string">&quot;Retrieval of venue account information for account %s failed.&quot;</span> <span class="ruby-operator">%</span> <span class="ruby-identifier">accountid</span>
+        <span class="ruby-keyword">return</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier">_rest_call</span>( <span class="ruby-value">:get</span>, <span class="ruby-identifier">uripath</span>, <span class="ruby-keyword">nil</span>, <span class="ruby-identifier">errormsg</span> )
+<span class="ruby-keyword">end</span></pre>
+          </div>
+          
+        </div>
+
+        
+
+        
+      </div>
+
+    
+      <div id="method-i-retrieve_venue_account_balance" class="method-detail ">
+        
+        <div class="method-heading">
+          <span class="method-name">retrieve_venue_account_balance</span><span
+            class="method-args">( venue, accountid, venuekeyid )</span>
+          
+          <span class="method-click-advice">click to toggle source</span>
+          
+        </div>
+        
+
+        <div class="method-description">
+          
+          <p>Return an array of hashes of a venue account&#39;s balances</p>
+          
+          
+
+          
+          <div class="method-source-code" id="retrieve_venue_account_balance-source">
+            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 235</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">retrieve_venue_account_balance</span>( <span class="ruby-identifier">venue</span>, <span class="ruby-identifier">accountid</span>, <span class="ruby-identifier">venuekeyid</span> )
+        <span class="ruby-identifier">uripath</span>   = <span class="ruby-string">&quot;/venues/exchanges/&quot;</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">venue</span> <span class="ruby-operator">+</span> <span class="ruby-string">&quot;/accounts/&quot;</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">accountid</span> <span class="ruby-operator">+</span> <span class="ruby-string">&quot;/balance&quot;</span>
+        <span class="ruby-identifier">uriparams</span> = <span class="ruby-string">&quot;venueKeyId=&quot;</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">venuekeyid</span> 
+        <span class="ruby-identifier">errormsg</span>  = <span class="ruby-string">&quot;Retrieval of venue account&#39;s balance for account %s failed.&quot;</span> <span class="ruby-operator">%</span> <span class="ruby-identifier">accountid</span>
+        <span class="ruby-keyword">return</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier">_rest_call</span>( <span class="ruby-value">:get</span>, <span class="ruby-identifier">uripath</span>, <span class="ruby-identifier">uriparams</span>, <span class="ruby-identifier">errormsg</span> )
+<span class="ruby-keyword">end</span></pre>
+          </div>
+          
+        </div>
+
+        
+
+        
+      </div>
+
+    
+      <div id="method-i-retrieve_venue_account_order" class="method-detail ">
+        
+        <div class="method-heading">
+          <span class="method-name">retrieve_venue_account_order</span><span
+            class="method-args">( venue, accountid, venuekeyid, orderid )</span>
+          
+          <span class="method-click-advice">click to toggle source</span>
+          
+        </div>
+        
+
+        <div class="method-description">
+          
+          <p>Return an array of hashes of a venue account&#39;s orders</p>
+          
+          
+
+          
+          <div class="method-source-code" id="retrieve_venue_account_order-source">
+            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 255</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">retrieve_venue_account_order</span>( <span class="ruby-identifier">venue</span>, <span class="ruby-identifier">accountid</span>, <span class="ruby-identifier">venuekeyid</span>, <span class="ruby-identifier">orderid</span> )
+        <span class="ruby-identifier">uripath</span>   = <span class="ruby-string">&quot;/venues/exchanges/&quot;</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">venue</span> <span class="ruby-operator">+</span> <span class="ruby-string">&quot;/accounts/&quot;</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">accountid</span> <span class="ruby-operator">+</span> <span class="ruby-string">&quot;/orders/&quot;</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">orderid</span>
+        <span class="ruby-identifier">uriparams</span> = <span class="ruby-string">&quot;venueKeyId=&quot;</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">venuekeyid</span> 
+        <span class="ruby-identifier">errormsg</span>  = <span class="ruby-string">&quot;Retrieval of venue account&#39;s order %s for account %s failed.&quot;</span> <span class="ruby-operator">%</span> [<span class="ruby-identifier">orderid</span>, <span class="ruby-identifier">accountid</span>]
+        <span class="ruby-keyword">return</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier">_rest_call</span>( <span class="ruby-value">:get</span>, <span class="ruby-identifier">uripath</span>, <span class="ruby-identifier">uriparams</span>, <span class="ruby-identifier">errormsg</span> )
+<span class="ruby-keyword">end</span></pre>
+          </div>
+          
+        </div>
+
+        
+
+        
+      </div>
+
+    
+      <div id="method-i-retrieve_venue_account_orders" class="method-detail ">
+        
+        <div class="method-heading">
+          <span class="method-name">retrieve_venue_account_orders</span><span
+            class="method-args">( venue, accountid, venuekeyid, *statuses )</span>
+          
+          <span class="method-click-advice">click to toggle source</span>
+          
+        </div>
+        
+
+        <div class="method-description">
+          
+          <p>Return an array of hashes of a venue account&#39;s orders Accepts optional
+parameters for orders statuses for filtering results</p>
+          
+          
+
+          
+          <div class="method-source-code" id="retrieve_venue_account_orders-source">
+            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 244</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">retrieve_venue_account_orders</span>( <span class="ruby-identifier">venue</span>, <span class="ruby-identifier">accountid</span>, <span class="ruby-identifier">venuekeyid</span>, <span class="ruby-operator">*</span><span class="ruby-identifier">statuses</span> )
+        <span class="ruby-identifier">uripath</span>   = <span class="ruby-string">&quot;/venues/exchanges/&quot;</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">venue</span> <span class="ruby-operator">+</span> <span class="ruby-string">&quot;/accounts/&quot;</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">accountid</span> <span class="ruby-operator">+</span> <span class="ruby-string">&quot;/orders&quot;</span>
+        <span class="ruby-identifier">uriparams</span> = <span class="ruby-string">&quot;venueKeyId=&quot;</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">venuekeyid</span> 
+        <span class="ruby-identifier">statuses</span>.<span class="ruby-identifier">each</span> <span class="ruby-keyword">do</span> <span class="ruby-operator">|</span><span class="ruby-identifier">status</span><span class="ruby-operator">|</span>
+                <span class="ruby-identifier">uriparams</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-string">&quot;&amp;status=&quot;</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">status</span>.<span class="ruby-identifier">to_s</span>
         <span class="ruby-keyword">end</span>
+        <span class="ruby-identifier">errormsg</span>  = <span class="ruby-string">&quot;Retrieval of venue account&#39;s orders for account %s failed.&quot;</span> <span class="ruby-operator">%</span> <span class="ruby-identifier">accountid</span>
+        <span class="ruby-keyword">return</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier">_rest_call</span>( <span class="ruby-value">:get</span>, <span class="ruby-identifier">uripath</span>, <span class="ruby-identifier">uriparams</span>, <span class="ruby-identifier">errormsg</span> )
+<span class="ruby-keyword">end</span></pre>
+          </div>
+          
+        </div>
+
+        
+
+        
+      </div>
+
+    
+      <div id="method-i-retrieve_venue_account_trade" class="method-detail ">
+        
+        <div class="method-heading">
+          <span class="method-name">retrieve_venue_account_trade</span><span
+            class="method-args">( venue, accountid, venuekeyid, tradeid )</span>
+          
+          <span class="method-click-advice">click to toggle source</span>
+          
+        </div>
+        
+
+        <div class="method-description">
+          
+          <p>Return a hashe of a venue account&#39;s trade</p>
+          
+          
+
+          
+          <div class="method-source-code" id="retrieve_venue_account_trade-source">
+            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 310</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">retrieve_venue_account_trade</span>( <span class="ruby-identifier">venue</span>, <span class="ruby-identifier">accountid</span>, <span class="ruby-identifier">venuekeyid</span>, <span class="ruby-identifier">tradeid</span> )
+        <span class="ruby-identifier">uripath</span>   = <span class="ruby-string">&quot;/venues/exchanges/&quot;</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">venue</span> <span class="ruby-operator">+</span> <span class="ruby-string">&quot;/accounts/&quot;</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">accountid</span> <span class="ruby-operator">+</span> <span class="ruby-string">&quot;/trades/&quot;</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">tradeid</span>
+        <span class="ruby-identifier">uriparams</span> = <span class="ruby-string">&quot;venueKeyId=&quot;</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">venuekeyid</span> 
+        <span class="ruby-identifier">errormsg</span>  = <span class="ruby-string">&quot;Retrieval of venue account&#39;s trade %s for account %s failed.&quot;</span> <span class="ruby-operator">%</span> [<span class="ruby-identifier">tradeid</span>, <span class="ruby-identifier">accountid</span>]
+        <span class="ruby-keyword">return</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier">_rest_call</span>( <span class="ruby-value">:get</span>, <span class="ruby-identifier">uripath</span>, <span class="ruby-identifier">uriparams</span>, <span class="ruby-identifier">errormsg</span> )
+<span class="ruby-keyword">end</span></pre>
+          </div>
+          
+        </div>
+
+        
+
+        
+      </div>
+
+    
+      <div id="method-i-retrieve_venue_account_trades" class="method-detail ">
+        
+        <div class="method-heading">
+          <span class="method-name">retrieve_venue_account_trades</span><span
+            class="method-args">( venue, accountid, venuekeyid )</span>
+          
+          <span class="method-click-advice">click to toggle source</span>
+          
+        </div>
+        
+
+        <div class="method-description">
+          
+          <p>Return an array of hashes of a venue account&#39;s trades</p>
+          
+          
+
+          
+          <div class="method-source-code" id="retrieve_venue_account_trades-source">
+            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 302</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">retrieve_venue_account_trades</span>( <span class="ruby-identifier">venue</span>, <span class="ruby-identifier">accountid</span>, <span class="ruby-identifier">venuekeyid</span> )
+        <span class="ruby-identifier">uripath</span>   = <span class="ruby-string">&quot;/venues/exchanges/&quot;</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">venue</span> <span class="ruby-operator">+</span> <span class="ruby-string">&quot;/accounts/&quot;</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">accountid</span> <span class="ruby-operator">+</span> <span class="ruby-string">&quot;/trades&quot;</span>
+        <span class="ruby-identifier">uriparams</span> = <span class="ruby-string">&quot;venueKeyId=&quot;</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">venuekeyid</span> 
+        <span class="ruby-identifier">errormsg</span>  = <span class="ruby-string">&quot;Retrieval of venue account&#39;s orders for account %s failed.&quot;</span> <span class="ruby-operator">%</span> <span class="ruby-identifier">accountid</span>
+        <span class="ruby-keyword">return</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier">_rest_call</span>( <span class="ruby-value">:get</span>, <span class="ruby-identifier">uripath</span>, <span class="ruby-identifier">uriparams</span>, <span class="ruby-identifier">errormsg</span> )
+<span class="ruby-keyword">end</span></pre>
+          </div>
+          
+        </div>
+
+        
+
+        
+      </div>
+
+    
+      <div id="method-i-retrieve_venue_markets" class="method-detail ">
+        
+        <div class="method-heading">
+          <span class="method-name">retrieve_venue_markets</span><span
+            class="method-args">( venue )</span>
+          
+          <span class="method-click-advice">click to toggle source</span>
+          
+        </div>
+        
+
+        <div class="method-description">
+          
+          <p>Return an array of hashes of a venue&#39;s markets</p>
+          
+          
+
+          
+          <div class="method-source-code" id="retrieve_venue_markets-source">
+            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 222</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">retrieve_venue_markets</span>( <span class="ruby-identifier">venue</span> )
+        <span class="ruby-identifier">uripath</span> = <span class="ruby-string">&quot;/venues/&quot;</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">venue</span> <span class="ruby-operator">+</span> <span class="ruby-string">&quot;/markets&quot;</span>
+        <span class="ruby-keyword">return</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier">_rest_call</span>( <span class="ruby-value">:get</span>, <span class="ruby-identifier">uripath</span>, <span class="ruby-keyword">nil</span>, <span class="ruby-string">&quot;Retrieval of supported venue&#39;s markets failed.&quot;</span> )
+<span class="ruby-keyword">end</span></pre>
+          </div>
+          
+        </div>
+
+        
+
+        
+      </div>
+
+    
+      <div id="method-i-retrieve_venues" class="method-detail ">
+        
+        <div class="method-heading">
+          <span class="method-name">retrieve_venues</span><span
+            class="method-args">()</span>
+          
+          <span class="method-click-advice">click to toggle source</span>
+          
+        </div>
+        
+
+        <div class="method-description">
+          
+          <p>Return an array of supported Venues</p>
+          
+          
+
+          
+          <div class="method-source-code" id="retrieve_venues-source">
+            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 217</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">retrieve_venues</span>
+        <span class="ruby-keyword">return</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier">_rest_call</span>( <span class="ruby-value">:get</span>, <span class="ruby-string">&quot;/venues&quot;</span>, <span class="ruby-keyword">nil</span>, <span class="ruby-string">&quot;Retrieval of supported venues failed.&quot;</span> )
 <span class="ruby-keyword">end</span></pre>
           </div>
           
