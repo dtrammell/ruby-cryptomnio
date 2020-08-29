@@ -3,14 +3,21 @@ require 'base64'
 require 'json'
 
 ##
-# This is the root Cryptomnio object Class.  It contains global constants
+# This is the root Cryptomnio object Class.  It contains global constants.
 
 class Cryptomnio
-	# Constants
+	# The name of the Gem
 	NAME        = "Cryptomnio Ruby Gem"
+	# The name of the Gem's Author
 	AUTHOR      = "Dustin D. Trammell"
-	GEM_VERSION = "0.0.1.pre"
+	# The publication date of the current Gem version
+	DATE        = "2020-08-29"
+	# The Gem version
+	GEM_VERSION = "0.0.2.pre"
+	# The Cryptomnio API Version
 	API_VERSION = "1.0.0"
+	#URI_VERSION = "/v1"
+	URI_VERSION = ""
 
 	# Instance Variables
 
@@ -19,6 +26,14 @@ class Cryptomnio
 
 	def initalize
 		puts "Cryptomnio Initalized" if DEBUG
+	end
+
+	def geminfo
+		info = NAME + " " + GEM_VERSION + "\n"
+		info << DATE + " - " + AUTHOR + "\n"
+		info << "Cryptomnio API Version: " + API_VERSION + "\n"
+
+		return info
 	end
 end
 
@@ -106,217 +121,197 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		return true
 	end
 
-	def upload_api_keys
-		# Upload and store exchange API key(s) provided in config
-		for cred in @config[:apikeys] do
-			payload = {}
-			payload["exchange"]   = cred[:exchange]
-			payload["key"]        = cred[:key]
-			payload["secret"]     = cred[:secret]
-			payload["passphrase"] = cred[:passphrase] if cred[:passphrase]
-			payload["clientid"]   = cred[:clientid]   if cred[:clientid]
+	# Cryptomnio Key Authentication
+	def auth_cryptomnio( method, uripath )
+		puts "Building Authentication Credentials:" if DEBUG
 
-			self.upload_api_key payload
+		# Create concatenated method and base URL path string
+		methodpath = method.to_s.upcase + uripath # convert RestClient's method symbol to uppercase string
+		puts "	Method+Path = %s" % methodpath if DEBUG
+
+		# Create HMAC SHA-512 authentication hash of methodpath using secret key
+		@config[:auth_string] = Base64.encode64(OpenSSL::HMAC.digest('sha512', @config[:secret_key], methodpath)).split.join # .split.join is to remove '/n' inserted into signature by HMAC
+
+		# DEBUG Output
+		if DEBUG
+			puts "	Access-Key: %s" % @config[:access_key]
+			puts "	Signature:  %s" % @config[:auth_string]
+			puts
 		end
+
+		return @config[:auth_string]
+	end
+
+	# Test method wrapper for Cryptomnio Key Authentication
+	def auth_cryptomnio_test
+		# TODO: Find better CMA test call to use
+		method   = :get 
+		endpoint = "/venues"
+		#endpoint = "/nope"
+		uripath  = URI_VERSION + endpoint
+		signature = self.auth_cryptomnio( method, uripath )
+
+		puts "Testing Cryptomnio Key authentication:" if DEBUG
+		if DEBUG
+			puts "	Requesting: %s %s%s" % [ method, @config[:apiurl], uripath ]
+			puts "	Access-Key: %s"      % @config[:access_key]
+			puts "	Signature:  %s"      % signature
+		end
+
+		# Test Authentication Call
+		self._rest_call( method, uripath, nil, "Cryptomnio Key Authentication test failed." )
+
+		# Success
 		return true
 	end
 
-	def upload_api_key( payload ) 
-		# Upload and store a single exchange API key provided as a hash argument
-		puts "POST %s/exchange-keys" % @config[:apiurl] if DEBUG
-		puts JSON.generate(payload) if DEBUG
+	# Generic REST API call method
+	# Provides RestClient call with needed authentication headers and error handling
+	def _rest_call( method = :get, uripath = "/", uriparameters = nil, error_string = "REST API Call Failed", body = nil )
+		# Get the HMAC SHA-512 hash signature value for the method+URIpath
+		signature = self.auth_cryptomnio( method, URI_VERSION + uripath )
 
-		RestClient.post( @config[:apiurl]+"/exchange-keys", JSON.generate(payload), { "Authorization" => @config[:auth_string], "Content-type" => "application/json" } ) do
+		# Build the URI from the URIpath and optional parameters
+		uri = @config[:apiurl] + URI_VERSION + uripath
+		uri << "?" + uriparameters if uriparameters
+
+		# Built the headers
+		headers = {
+			# Authentication headers Access-Key and Sign
+			"Access-Key" => @config[:access_key],
+			"Sign"       => signature
+		}
+		# Add a Content-type header for application/json if there is a payload body to send
+		headers["Content-type"] = "application/json" if body
+
+		# Call RestClient based on the method against URI with authentication headers "Access-Key" and "Sign"
+		RestClient::Request.execute(
+			method:  method,
+			url:     uri,
+			headers: headers,
+			payload: body
+			) do
 			|response, request, result, &block|
 
-			puts "%d: %s" % [ response.code, response ] if DEBUG
-			reshash = JSON.parse(response)
-
-			case response.code
-			when !200
-				raise "Cryptomnio Exchange Key for exchange %s storage failed." % payload["exchange"]
-			else
-				raise "Cryptomnio Exchange Key for exchange %s storage failed." % payload["exchange"] if reshash["code"] != "OK"
+			# Verbose output
+			if VERBOSITY >= 3
+				puts "Request:      %s: %s" % [ request.method, request.uri ]
+				puts "POST payload: %s" % body if body
+				puts "Response:     %d: %s" % [ response.code, response ]
 			end
 
-			return true
+			# Check for errors
+			self._check_errors( response, error_string )
+
+			# Success: Convert JSON to Ruby object and return it
+			responsebody = JSON.parse(response)["body"]
+			pp responsebody if VERBOSITY >= 2 
+			return responsebody 
 		end
 	end
 
-	# Delete all exchange API keys from Cryptomnio
-	def delete_api_keys
-		# Get list of stored exchange API keys
-		keylist = self.get_all_exchange_keys
-
-		keylist["data"].each do | key |
-			self.delete_api_key key
-		end
-
+	# Return an array of supported Venues
+	def retrieve_venues
+		return self._rest_call( :get, "/venues", nil, "Retrieval of supported venues failed." )
 	end
 
-	def delete_api_key( key )
-		# Delete a single exchange API key by key ID
-		puts "Deleting key %d for exchange %s" % [ key["keyId"], key["exchange"] ] if DEBUG
-
-		RestClient.delete( @config[:apiurl] + "/exchange-keys?keyId=" + key["keyId"] +"&exchange=" + key["exchange"], { "Authorization" => @config[:auth_string]} ) do
-			|response, request, result, &block|
-			puts "%d: %s" % [ response.code, response ] if DEBUG
-			self._check_errors( response, "Deletion of Cryptomnio stored Exchange Key id %d failed." % key["keyId"] )
-
-			# Success
-			puts response if DEBUG
-			return true
-		end
+	# Return an array of hashes of a venue's markets
+	def retrieve_venue_markets( venue )
+		uripath = "/venues/" + venue + "/markets"
+		return self._rest_call( :get, uripath, nil, "Retrieval of supported venue's markets failed." )
 	end
 
-	# Return list hash of all stored exchange keys
-	def get_all_exchange_keys
-		RestClient.get( @config[:apiurl] + "/exchange-keys", { "Authorization" => @config[:auth_string]} ) do
-			|response, request, result, &block|
-			puts "%d: %s" % [ response.code, response ] if DEBUG
-			self._check_errors( response, "Retrieval of Cryptomnio stored Exchange Keys failed." )
-
-			# Success
-			puts response if DEBUG
-			# Return hash of all stored keys
-			keylist = JSON.parse(response)["data"]
-			puts keylist.inspect
-			return keylist
-		end
+	# Return a hash of a venue account
+	def retrieve_venue_account( venue, accountid )
+		uripath   = "/venues/" + venue + "/accounts/" + accountid
+		errormsg  =  "Retrieval of venue account information for account %s failed." % accountid
+		return self._rest_call( :get, uripath, nil, errormsg )
 	end
 
-	def order_create( key, side, order_type, pair, volume, price = nil )
-		# Build Order Payload
-		payload = {}
-		payload["exchange"]  = key["exchange"]
-		payload["keyId"]     = key["keyId"]
-		payload["orderType"] = order_type
-		payload["price"]     = price.to_s      if price
-		payload["side"]      = side
-		payload["volume"]    = volume.to_s
-		payload["pair"]      = pair
-
-		uri = "%s/order" % @config[:apiurl]
-		puts "POST %s" % uri if DEBUG
-		puts JSON.generate(payload) if DEBUG
-
-		RestClient.post( uri, JSON.generate(payload), { "Authorization" => @config[:auth_string], "Content-type" => "application/json" } ) do
-			|response, request, result, &block|
-			puts "%d: %s" % [ response.code, response ] if DEBUG
-			self._check_errors( response, "Cryptomnio Exchange order for exchange %s failed." % payload["exchange"] )
-
-			reshash = JSON.parse(response)
-
-			# Success
-			puts response if DEBUG
-			puts reshash.inspect if DEBUG
-			# Return Cryptomnio Order ID
-			return reshash["data"].to_i
-		end
+	# Return an array of hashes of a venue account's balances 
+	def retrieve_venue_account_balance( venue, accountid, venuekeyid )
+		uripath   = "/venues/exchanges/" + venue + "/accounts/" + accountid + "/balance"
+		uriparams = "venueKeyId=" + venuekeyid 
+		errormsg  = "Retrieval of venue account's balance for account %s failed." % accountid
+		return self._rest_call( :get, uripath, uriparams, errormsg )
 	end
 
-	def order_get( key, order_id )
-		uri = "%s/order?exchange=%s&keyId=%s&internalOrderId=%d" % [ @config[:apiurl], key["exchange"], key["keyId"], order_id ]
-		puts "GET %s" % uri if DEBUG
-
-		RestClient.get( uri, { "Authorization" => @config[:auth_string], "Content-type" => "application/json" } ) do
-			|response, request, result, &block|
-			puts "%d: %s" % [ response.code, response ] if DEBUG
-			self._check_errors( response, "Retrieval of Cryptomnio order information for %d failed." % order_id )
-
-			# Success
-			order_info = JSON.parse(response)["data"]
-			puts order_info.inspect if DEBUG
-			# Return Order Info Hash
-			return order_info
+	# Return an array of hashes of a venue account's orders
+	# Accepts optional parameters for orders statuses for filtering results
+	def retrieve_venue_account_orders( venue, accountid, venuekeyid, *statuses )
+		uripath   = "/venues/exchanges/" + venue + "/accounts/" + accountid + "/orders"
+		uriparams = "venueKeyId=" + venuekeyid 
+		statuses.each do |status|
+			uriparams << "&status=" + status.to_s
 		end
+		errormsg  = "Retrieval of venue account's orders for account %s failed." % accountid
+		return self._rest_call( :get, uripath, uriparams, errormsg )
 	end
 
-	def order_cancel( key, order_id )
-		uri = "%s/order?exchange=%s&keyId=%s&internalOrderId=%d" % [ @config[:apiurl], key["exchange"], key["keyId"], order_id ]
-		puts "DELETE %s" % uri if DEBUG
-
-		RestClient.delete( uri, { "Authorization" => @config[:auth_string], "Content-type" => "application/json" } ) do
-			|response, request, result, &block|
-
-			puts "%d: %s" % [ response.code, response ] if DEBUG
-
-			self._check_errors( response, "Deletion of Cryptomnio order %d failed." % order_id )
-
-			# Success
-			return true
-		end
+	# Return an array of hashes of a venue account's orders
+	def retrieve_venue_account_order( venue, accountid, venuekeyid, orderid )
+		uripath   = "/venues/exchanges/" + venue + "/accounts/" + accountid + "/orders/" + orderid
+		uriparams = "venueKeyId=" + venuekeyid 
+		errormsg  = "Retrieval of venue account's order %s for account %s failed." % [orderid, accountid]
+		return self._rest_call( :get, uripath, uriparams, errormsg )
 	end
 
-	def orders_active_get( key )
-		uri = "%s/orders/active?exchange=%s&keyId=%s" % [ @config[:apiurl], key["exchange"], key["keyId"] ]
-		puts "GET %s" % uri if DEBUG
-
-		RestClient.get( uri, { "Authorization" => @config[:auth_string], "Content-type" => "application/json" } ) do
-			|response, request, result, &block|
-			puts "%d: %s" % [ response.code, response ] if DEBUG
-			self._check_errors( response, "Retrieval of Cryptomnio active orders information failed." )
-
-			# Success
-			orders_info = JSON.parse(response)["data"]
-#			puts JSON.pretty_generate(orders_info)
-			puts orders_info.inspect if DEBUG
-			# Return Orders Info Hash
-			return orders_info
-		end
+	# Create a new market order under a venue account
+	def create_venue_account_order_market( venue, accountid, venuekeyid, side, quantity, market )
+		uripath  = "/venues/exchanges/" + venue + "/accounts/" + accountid + "/orders"
+		errormsg = "Creation of new market order for account %s failed." % accountid
+		body     = {
+			"venue"      => venue,
+			"venueKeyId" => venuekeyid,
+			"orderType"  => "market",
+			"side"       => side,
+			"quantity"   => quantity,
+			"market"     => market
+		}
+		return self._rest_call( :post, uripath, nil, errormsg, body.to_json )
 	end
 
-	def orders_history_get( key )
-		uri = "%s/orders/history?exchange=%s&keyId=%s" % [ @config[:apiurl], key["exchange"], key["keyId"] ]
-		puts "GET %s" % uri if DEBUG
-
-		RestClient.get( uri, { "Authorization" => @config[:auth_string], "Content-type" => "application/json" } ) do
-			|response, request, result, &block|
-			puts "%d: %s" % [ response.code, response ] if DEBUG
-			self._check_errors( response, "Retrieval of Cryptomnio closed orders information failed." )
-
-			# Success
-			orders_info = JSON.parse(response)["data"]
-#			puts JSON.pretty_generate(orders_info)
-			puts orders_info.inspect if DEBUG
-			# Return Orders Info Hash
-			return orders_info
-		end
+	# Create a new limit order under a venue account
+	def create_venue_account_order_limit( venue, accountid, venuekeyid, side, quantity, price, market )
+		uripath  = "/venues/exchanges/" + venue + "/accounts/" + accountid + "/orders"
+		errormsg = "Creation of new limit order for account %s failed." % accountid
+		body     = {
+			"venue"      => venue,
+			"venueKeyId" => venuekeyid,
+			"orderType"  => "limit",
+			"side"       => side,
+			"quantity"   => quantity,
+			"price"      => price,
+			"market"     => market
+		}
+		return self._rest_call( :post, uripath, nil, errormsg, body.to_json )
 	end
 
-	def wallet_get( key )
-		uri = "%s/wallet?exchange=%s&keyId=%s" % [ @config[:apiurl], key["exchange"], key["keyId"] ]
-		puts "GET %s" % uri if DEBUG
-
-		RestClient.get( uri, { "Authorization" => @config[:auth_string], "Content-type" => "application/json" } ) do
-			|response, request, result, &block|
-			puts "%d: %s" % [ response.code, response ] if DEBUG
-			self._check_errors( response, "Retrieval of Cryptomnio wallet information for key %d failed." % key["keyId"])
-
-			# Success
-			balances = JSON.parse(response)["data"]["balances"]
-			puts balances.inspect if DEBUG
-			# Return Wallet Info hash of hashes
-			wallet_info = {}
-			balances.each do |currency|
-				wallet_info[currency["currency"]] = currency
-			end
-			puts wallet_info.inspect if DEBUG
-			return wallet_info
-		end
+	# Delete (cancel) a venue account's open order
+	def delete_venue_account_order( venue, accountid, venuekeyid, orderid )
+		uripath   = "/venues/exchanges/" + venue + "/accounts/" + accountid + "/orders/" + orderid
+		uriparams = "venueKeyId=" + venuekeyid 
+		errormsg  = "Cancellation of venue account's order %s for account %s failed." % [orderid, accountid]
+		return self._rest_call( :delete, uripath, uriparams, errormsg )
 	end
 
-#	def wallet_get( key, exchange )
-#		wallets = self.wallet_get_all( key )
-#		wallets.each do |ex|
-#			return ex["balances"] if ex["exchange"] == exchange
-#		end
-#		# Requested wallet not found
-#		return nil
-#	end
+	# Return an array of hashes of a venue account's trades
+	def retrieve_venue_account_trades( venue, accountid, venuekeyid )
+		uripath   = "/venues/exchanges/" + venue + "/accounts/" + accountid + "/trades"
+		uriparams = "venueKeyId=" + venuekeyid 
+		errormsg  = "Retrieval of venue account's orders for account %s failed." % accountid
+		return self._rest_call( :get, uripath, uriparams, errormsg )
+	end
 
+	# Return a hashe of a venue account's trade
+	def retrieve_venue_account_trade( venue, accountid, venuekeyid, tradeid )
+		uripath   = "/venues/exchanges/" + venue + "/accounts/" + accountid + "/trades/" + tradeid
+		uriparams = "venueKeyId=" + venuekeyid 
+		errormsg  = "Retrieval of venue account's trade %s for account %s failed." % [tradeid, accountid]
+		return self._rest_call( :get, uripath, uriparams, errormsg )
+	end
 
-
+	# Object initialization
 	def initialize
 		yield self if block_given?
 		super
@@ -325,13 +320,25 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		p @config if DEBUG
 	end
 
+	# Error-handling method
 	def _check_errors( response, thisfailure )
 		case response.code
 		when 400
 			raise "Error: [%d]: %s" % [ response.code, response ] 
 			return false
 		when 401
-			raise "Cryptomnio Basic Authentication for user %s failed: [%d]: %s" % [ @config[:username], response.code, response ] 
+			case @config[:authtype] 
+			when "Basic"
+				raise "Cryptomnio Basic Authentication for user %s failed: [%d]: %s" % [ @config[:username], response.code, response ]
+				return false
+			when "Cryptomnio"
+				raise "Cryptomnio Key Authentication failed: [%d]: %s" % [ response.code, response ]
+				return false
+			else
+				raise "Authentication failed: [%d]: %s" % [ response.code, response ]
+			end
+		when 404
+			raise "Error: Missing Resource"
 			return false
 		when !200
 			raise thisfailure
