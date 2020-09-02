@@ -25,7 +25,7 @@ class Cryptomnio
 	# Creates a new Cryptomnio object
 
 	def initalize
-		puts "Cryptomnio Initalized" if DEBUG
+		puts "Cryptomnio Initalized" if VERBOSITY >= 1
 	end
 
 	def geminfo
@@ -89,8 +89,8 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		# Store Authentication string for Authorization Header in config
 		@config[:auth_string] = "Basic %s" % Base64.urlsafe_encode64(@config[:username] + ":" + @config[:password])
 
-		# DEBUG Output
-		if DEBUG
+		# Output
+		if VERBOSITY >= 2
 			puts "Username: %s" % @config[:username]
 			puts "Password: %s" % @config[:password]
 			# TODO: Find better test call to use
@@ -117,23 +117,23 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		end
 
 		# Success
-		puts JSON.parse(res) if DEBUG
+		puts JSON.parse(res) if VERBOSITY >= 2
 		return true
 	end
 
 	# Cryptomnio Key Authentication
 	def auth_cryptomnio( method, uripath )
-		puts "Building Authentication Credentials:" if DEBUG
+		puts "Building Authentication Credentials" if VERBOSITY >= 1
 
 		# Create concatenated method and base URL path string
 		methodpath = method.to_s.upcase + uripath # convert RestClient's method symbol to uppercase string
-		puts "	Method+Path = %s" % methodpath if DEBUG
+		puts "	Method+Path = %s" % methodpath if VERBOSITY >= 2
 
 		# Create HMAC SHA-512 authentication hash of methodpath using secret key
 		@config[:auth_string] = Base64.encode64(OpenSSL::HMAC.digest('sha512', @config[:secret_key], methodpath)).split.join # .split.join is to remove '/n' inserted into signature by HMAC
 
-		# DEBUG Output
-		if DEBUG
+		# Output
+		if VERBOSITY >= 2
 			puts "	Access-Key: %s" % @config[:access_key]
 			puts "	Signature:  %s" % @config[:auth_string]
 			puts
@@ -151,8 +151,8 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		uripath  = URI_VERSION + endpoint
 		signature = self.auth_cryptomnio( method, uripath )
 
-		puts "Testing Cryptomnio Key authentication:" if DEBUG
-		if DEBUG
+		puts "Testing Cryptomnio Key authentication" if VERBOSITY >= 1
+		if VERBOSITY >= 2
 			puts "	Requesting: %s %s%s" % [ method, @config[:apiurl], uripath ]
 			puts "	Access-Key: %s"      % @config[:access_key]
 			puts "	Signature:  %s"      % signature
@@ -195,7 +195,7 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 
 			# Verbose output
 			if VERBOSITY >= 3
-				puts "Request:      %s: %s" % [ request.method, request.uri ]
+				puts "Request:      %s: %s" % [ request.method.upcase, request.uri ]
 				puts "POST payload: %s" % body if body
 				puts "Response:     %d: %s" % [ response.code, response ]
 			end
@@ -248,7 +248,7 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		return self._rest_call( :get, uripath, uriparams, errormsg )
 	end
 
-	# Return an array of hashes of a venue account's orders
+	# Return an hash of a venue account's single order
 	def retrieve_venue_account_order( venue, accountid, venuekeyid, orderid )
 		uripath   = "/venues/exchanges/" + venue + "/accounts/" + accountid + "/orders/" + orderid
 		uriparams = "venueKeyId=" + venuekeyid 
@@ -317,7 +317,10 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		super
 
 		# Store method config variables in an instance variable
-		p @config if DEBUG
+		if VERBOSITY >= 1
+			puts "Configuration:"
+			p @config
+		end
 	end
 
 	# Error-handling method
