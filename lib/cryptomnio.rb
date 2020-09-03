@@ -72,7 +72,7 @@ class Cryptomnio::REST < Cryptomnio
 	def initalize
 		super
 		# Get the HTTP proxy from the environment (if there is one)
-		RestClient.proxy = EVN['http_proxy']
+		RestClient.proxy = ENV['http_proxy'] if ENV['http_proxy']
 	end
 end
 
@@ -167,15 +167,24 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 
 	# Generic REST API call method
 	# Provides RestClient call with needed authentication headers and error handling
-	def _rest_call( method = :get, uripath = "/", uriparameters = nil, error_string = "REST API Call Failed", body = nil )
+	def _rest_call( method = :get, api = :core, uripath = "/", uriparameters = nil, error_string = "REST API Call Failed", body = nil )
 		# Get the HMAC SHA-512 hash signature value for the method+URIpath
 		signature = self.auth_cryptomnio( method, URI_VERSION + uripath )
 
 		# Build the URI from the URIpath and optional parameters
-		uri = @config[:apiurl] + URI_VERSION + uripath
+		case api
+			when :core
+				uri = "https://" + @config[:api_host_core] + URI_VERSION + uripath
+			when :cma
+				uri = "https://" + @config[:api_host_cma] + URI_VERSION + uripath
+			else
+				raise "Unknown API (%s) referenced" % api
+		end
 		uri << "?" + uriparameters if uriparameters
 
-		# Built the headers
+		##
+		# Build the Headers
+
 		headers = {
 			# Authentication headers Access-Key and Sign
 			"Access-Key" => @config[:access_key],
@@ -196,7 +205,8 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 			# Verbose output
 			if VERBOSITY >= 3
 				puts "Request:      %s: %s" % [ request.method.upcase, request.uri ]
-				puts "POST payload: %s" % body if body
+				puts "Headers:      %s"     % [ request.headers ]
+				puts "POST payload: %s"     % [ body ] if body
 				puts "Response:     %d: %s" % [ response.code, response ]
 			end
 
@@ -204,28 +214,44 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 			self._check_errors( response, error_string )
 
 			# Success: Convert JSON to Ruby object and return it
-			responsebody = JSON.parse(response)["body"]
-			pp responsebody if VERBOSITY >= 2 
-			return responsebody 
+			# TODO: remove this workaround that handles the two APIs differently once they are consistent
+			case api
+				when :core
+					responsebody = JSON.parse(response)["body"]
+					pp responsebody if VERBOSITY >= 2 
+					return responsebody 
+				when :cma
+					responsebody = JSON.parse(response)
+					pp responsebody if VERBOSITY >= 2 
+					return responsebody 
+				else
+					raise "Unknown API (%s) referenced" % api
+			end
 		end
 	end
 
+   ##
+	# CORE API Venue and Market function methods
+
 	# Return an array of supported Venues
 	def retrieve_venues
-		return self._rest_call( :get, "/venues", nil, "Retrieval of supported venues failed." )
+		return self._rest_call( :get, :core, "/venues", nil, "Retrieval of supported venues failed." )
 	end
 
 	# Return an array of hashes of a venue's markets
 	def retrieve_venue_markets( venue )
 		uripath = "/venues/" + venue + "/markets"
-		return self._rest_call( :get, uripath, nil, "Retrieval of supported venue's markets failed." )
+		return self._rest_call( :get, :core, uripath, nil, "Retrieval of supported venue's markets failed." )
 	end
+
+   ##
+	# CORE API Account function methods
 
 	# Return a hash of a venue account
 	def retrieve_venue_account( venue, accountid )
 		uripath   = "/venues/" + venue + "/accounts/" + accountid
 		errormsg  =  "Retrieval of venue account information for account %s failed." % accountid
-		return self._rest_call( :get, uripath, nil, errormsg )
+		return self._rest_call( :get, :core, uripath, nil, errormsg )
 	end
 
 	# Return an array of hashes of a venue account's balances 
@@ -233,7 +259,19 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		uripath   = "/venues/exchanges/" + venue + "/accounts/" + accountid + "/balance"
 		uriparams = "venueKeyId=" + venuekeyid 
 		errormsg  = "Retrieval of venue account's balance for account %s failed." % accountid
-		return self._rest_call( :get, uripath, uriparams, errormsg )
+		return self._rest_call( :get, :core, uripath, uriparams, errormsg )
+	end
+
+	# Get account balance for symbol
+	def retrieve_venue_account_balance_symbol( venue, accountid, venuekeyid, symbol )
+		@balance = nil
+		# TODO: Check timestamp, if too old, update balances
+		@balances = self.retrieve_venue_account_balance( venue, accountid, venuekeyid )
+		pp @balances if VERBOSITY >= 2
+		@balances["assets"].each do |asset|
+			@balance = asset["amount"] if asset["currency"] == symbol.downcase
+		end
+		return @balance
 	end
 
 	# Return an array of hashes of a venue account's orders
@@ -245,7 +283,7 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 			uriparams << "&status=" + status.to_s
 		end
 		errormsg  = "Retrieval of venue account's orders for account %s failed." % accountid
-		return self._rest_call( :get, uripath, uriparams, errormsg )
+		return self._rest_call( :get, :core, uripath, uriparams, errormsg )
 	end
 
 	# Return an hash of a venue account's single order
@@ -253,7 +291,7 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		uripath   = "/venues/exchanges/" + venue + "/accounts/" + accountid + "/orders/" + orderid
 		uriparams = "venueKeyId=" + venuekeyid 
 		errormsg  = "Retrieval of venue account's order %s for account %s failed." % [orderid, accountid]
-		return self._rest_call( :get, uripath, uriparams, errormsg )
+		return self._rest_call( :get, :core, uripath, uriparams, errormsg )
 	end
 
 	# Create a new market order under a venue account
@@ -268,7 +306,7 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 			"quantity"   => quantity,
 			"market"     => market
 		}
-		return self._rest_call( :post, uripath, nil, errormsg, body.to_json )
+		return self._rest_call( :post, :core, uripath, nil, errormsg, body.to_json )
 	end
 
 	# Create a new limit order under a venue account
@@ -284,7 +322,7 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 			"price"      => price,
 			"market"     => market
 		}
-		return self._rest_call( :post, uripath, nil, errormsg, body.to_json )
+		return self._rest_call( :post, :core, uripath, nil, errormsg, body.to_json )
 	end
 
 	# Delete (cancel) a venue account's open order
@@ -292,7 +330,7 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		uripath   = "/venues/exchanges/" + venue + "/accounts/" + accountid + "/orders/" + orderid
 		uriparams = "venueKeyId=" + venuekeyid 
 		errormsg  = "Cancellation of venue account's order %s for account %s failed." % [orderid, accountid]
-		return self._rest_call( :delete, uripath, uriparams, errormsg )
+		return self._rest_call( :delete, :core, uripath, uriparams, errormsg )
 	end
 
 	# Return an array of hashes of a venue account's trades
@@ -300,7 +338,7 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		uripath   = "/venues/exchanges/" + venue + "/accounts/" + accountid + "/trades"
 		uriparams = "venueKeyId=" + venuekeyid 
 		errormsg  = "Retrieval of venue account's orders for account %s failed." % accountid
-		return self._rest_call( :get, uripath, uriparams, errormsg )
+		return self._rest_call( :get, :core, uripath, uriparams, errormsg )
 	end
 
 	# Return a hashe of a venue account's trade
@@ -308,13 +346,69 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		uripath   = "/venues/exchanges/" + venue + "/accounts/" + accountid + "/trades/" + tradeid
 		uriparams = "venueKeyId=" + venuekeyid 
 		errormsg  = "Retrieval of venue account's trade %s for account %s failed." % [tradeid, accountid]
-		return self._rest_call( :get, uripath, uriparams, errormsg )
+		return self._rest_call( :get, :core, uripath, uriparams, errormsg )
 	end
+
+	##
+	# CMA API Methods
+
+	# Return a hash of a venue market's order book
+	def retrieve_venue_market_orderbook( venue, market, side = nil, limit = nil )
+		uripath   = "/venues/" + venue + "/markets/" + market + "/orderbook"
+		uriparams = ""
+		uriparams << "&side=" + side if side
+		uriparams << "&limit=" + limit if limit
+		uriparams = nil if uriparams.length == 0
+		return self._rest_call( :get, :cma, uripath, uriparams, "Retrieval of venue's market's order book failed." )
+	end
+
+	# Return an array of a venue market's ticker hashes
+	def retrieve_venue_market_tickers( venue, market, from = (Time.now - 60).to_i, to = nil, cursor = nil )
+		uripath    = "/venues/"  + venue + "/markets/" + market + "/ticker"
+		uriparams  = "from=%s"  % from
+		uriparams << "&to=%s"   % to     if to
+		uriparams << "&cursor=" + cursor if cursor
+		return self._rest_call( :get, :cma, uripath, uriparams, "Retrieval of venue's market's market ticker failed." )
+	end
+
+	# Return a venue market's most current ticker hash
+	def retrieve_venue_market_ticker( venue, market )
+		tickers = self.retrieve_venue_market_tickers( venue, market ) 
+		count =  tickers['tickers'].count
+		if VERBOSITY >= 2
+			puts "Found %d tickers" % count
+			puts "Index 0: %s" % tickers['tickers'][0].inspect
+			puts "Index %d: %s" % [ count - 1, tickers['tickers'][count - 1].inspect ]
+			puts "Cursor: %d" % tickers['cursor']
+		end
+		return tickers['tickers'][count - 1]
+	end
+
+	##
+	# Object Methods
 
 	# Object initialization
 	def initialize
 		yield self if block_given?
 		super
+
+		##
+		# Configuration check
+
+		# Check for required API hostnames
+		raise "Missing Configuration Parameter: api_host_core"    if ! @config[:api_host_core]
+		raise "Missing Configuration Parameter: api_host_cma"     if ! @config[:api_host_cma]
+		# Check for required Authentication Credentials
+		raise "Missing Configuration Parameter: authtype"         if ! @config[:authtype]
+		case @config[:authtype]
+			when "Basic"
+				raise "Missing Configuration Parameter: username"   if ! @config[:username]
+				raise "Missing Configuration Parameter: password"   if ! @config[:password]
+			when "Cryptomnio:"
+				raise "Missing Configuration Parameter: access_key" if ! @config[:access_key]
+				raise "Missing Configuration Parameter: secret_key" if ! @config[:secret_key]
+			else
+		end
 
 		# Store method config variables in an instance variable
 		if VERBOSITY >= 1
@@ -322,6 +416,9 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 			p @config
 		end
 	end
+
+	##
+	# Utility Methods
 
 	# Error-handling method
 	def _check_errors( response, thisfailure )
