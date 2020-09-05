@@ -422,11 +422,11 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 
 	# Error-handling method
 	def _check_errors( response, thisfailure )
-		case response.code
-		when 400
+		case
+		when response.code == 400
 			raise "Error: [%d]: %s" % [ response.code, response ] 
 			return false
-		when 401
+		when response.code == 401
 			case @config[:authtype] 
 			when "Basic"
 				raise "Cryptomnio Basic Authentication for user %s failed: [%d]: %s" % [ @config[:username], response.code, response ]
@@ -436,11 +436,13 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 				return false
 			else
 				raise "Authentication failed: [%d]: %s" % [ response.code, response ]
+				return false
 			end
-		when 404
+		when response.code == 404
 			raise "Error: Missing Resource"
 			return false
-		when !200
+		when response.code != 200
+			# Catch-all: Anything other than success
 			raise thisfailure
 			return false
 		else
