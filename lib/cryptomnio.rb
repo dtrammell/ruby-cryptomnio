@@ -466,11 +466,12 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 	end
 
 	# Return a venue market's most current ticker hash
-	def retrieve_venue_market_ticker( market,
+	def retrieve_venue_market_ticker(
+		market,
 		venue  = @context[:venue].to_s)
 
-		# Call retrieve_venue_market_tickers to request a single ticker (last 15 seconds)
-		tickers = self.retrieve_venue_market_tickers( venue, market, (Time.now - 15).to_i*1000 ) 
+		# Call retrieve_venue_market_tickers to request a single ticker (last 20 seconds)
+		tickers = self.retrieve_venue_market_tickers( market, (Time.now.to_i - 20)*1000, nil, nil, venue ) 
 		# Return the last ticker in the array (in case somehow we got back more than one)
 		count =  tickers['tickers'].count
 		return tickers['tickers'][count - 1]
