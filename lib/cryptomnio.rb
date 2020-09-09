@@ -305,7 +305,7 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 
 		symbol = symbol.downcase
 		$balance = nil
-		# TODO: Check timestamp, if too old, update balances
+		# TODO: Check cached balance's timestamp, if too old, update balances
 		# Retrieve all balances for account
 		@balances = self.retrieve_venue_account_balance( venue, accountid, venuekeyid )
 		# Find the balance for the symbol we want
@@ -466,7 +466,9 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 	end
 
 	# Return a venue market's most current ticker hash
-	def retrieve_venue_market_ticker( venue, market )
+	def retrieve_venue_market_ticker( market,
+		venue  = @context[:venue].to_s)
+
 		# Call retrieve_venue_market_tickers to request a single ticker (last 15 seconds)
 		tickers = self.retrieve_venue_market_tickers( venue, market, (Time.now - 15).to_i*1000 ) 
 		# Return the last ticker in the array (in case somehow we got back more than one)
