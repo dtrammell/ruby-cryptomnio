@@ -84,6 +84,27 @@ end
 class Cryptomnio::REST::Client < Cryptomnio::REST
 	attr_accessor :config
 
+	# Switch Object's Context (Account + Venue to operate as)
+	def context_switch( label )
+		puts "Switching to context \"%s\"" % label if VERBOSITY >= 3
+
+		# Validate that a context for label exists
+		raise "No context found for label: %s" % label if ! @config[:contexts][label]
+		puts @config[:contexts][label].inspect if VERBOSITY >= 3
+
+		# Validate that the required parameters exist
+		raise "Missing Configuration Parameter: contexts[:venue]"      if ! @config[:contexts][label][:venue]
+		raise "Missing Configuration Parameter: contexts[:accountid]"  if ! @config[:contexts][label][:accountid]
+		raise "Missing Configuration Parameter: contexts[:venuekeyid]" if ! @config[:contexts][label][:venuekeyid]
+
+		# Switch to the context
+		@context = @config[:contexts][label]
+
+		# Return true on success
+		puts "Context Switch Successful!" if VERBOSITY >= 3
+		return true
+	end
+
 	# Basic Authentication
 	def auth_basic
 		# Store Authentication string for Authorization Header in config
@@ -123,7 +144,7 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 
 	# Cryptomnio Key Authentication
 	def auth_cryptomnio( method, uripath )
-		puts "Building Authentication Credentials" if VERBOSITY >= 1
+		puts "Building Authentication Credentials" if VERBOSITY >= 2
 
 		# Create concatenated method and base URL path string
 		methodpath = method.to_s.upcase + uripath # convert RestClient's method symbol to uppercase string
@@ -194,39 +215,45 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		headers["Content-type"] = "application/json" if body
 
 		# Call RestClient based on the method against URI with authentication headers "Access-Key" and "Sign"
-		RestClient::Request.execute(
-			method:  method,
-			url:     uri,
-			headers: headers,
-			payload: body
-			) do
-			|response, request, result, &block|
+		begin
+			RestClient::Request.execute(
+				method:  method,
+				url:     uri,
+				headers: headers,
+				payload: body
+				) do
+				|response, request, result, &block|
 
-			# Verbose output
-			if VERBOSITY >= 3
-				puts "Request:      %s: %s" % [ request.method.upcase, request.uri ]
-				puts "Headers:      %s"     % [ request.headers ]
-				puts "POST payload: %s"     % [ body ] if body
-				puts "Response:     %d: %s" % [ response.code, response ]
+				# Verbose output
+				if VERBOSITY >= 3
+					puts "Request:      %s: %s" % [ request.method.upcase, request.uri ]
+					puts "Headers:      %s"     % [ request.headers ]
+					puts "POST payload: %s"     % [ body ] if body
+					puts "Response:     %d: %s" % [ response.code, response ]
+				end
+
+				# Check for errors
+				self._check_errors( response, error_string )
+
+				# Success: Convert JSON to Ruby object and return it
+				# TODO: remove this workaround that handles the two APIs differently once they are consistent
+				case api
+					when :core
+						responsebody = JSON.parse(response)["body"]
+						pp responsebody if VERBOSITY >= 2 
+						return responsebody 
+					when :cma
+						responsebody = JSON.parse(response)
+						pp responsebody if VERBOSITY >= 2 
+						return responsebody 
+					else
+						raise "Unknown API (%s) referenced" % api
+				end
 			end
-
-			# Check for errors
-			self._check_errors( response, error_string )
-
-			# Success: Convert JSON to Ruby object and return it
-			# TODO: remove this workaround that handles the two APIs differently once they are consistent
-			case api
-				when :core
-					responsebody = JSON.parse(response)["body"]
-					pp responsebody if VERBOSITY >= 2 
-					return responsebody 
-				when :cma
-					responsebody = JSON.parse(response)
-					pp responsebody if VERBOSITY >= 2 
-					return responsebody 
-				else
-					raise "Unknown API (%s) referenced" % api
-			end
+		rescue => e
+			# Rescue any exceptions thrown by _check_errors
+			puts e.inspect
+			puts e.message
 		end
 	end
 
@@ -248,14 +275,21 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 	# CORE API Account function methods
 
 	# Return a hash of a venue account
-	def retrieve_venue_account( venue, accountid )
+	def retrieve_venue_account(
+		venue     = @context[:venue].to_s,
+		accountid = @context[:accountid] )
+
 		uripath   = "/venues/" + venue + "/accounts/" + accountid
 		errormsg  =  "Retrieval of venue account information for account %s failed." % accountid
 		return self._rest_call( :get, :core, uripath, nil, errormsg )
 	end
 
 	# Return an array of hashes of a venue account's balances 
-	def retrieve_venue_account_balance( venue, accountid, venuekeyid )
+	def retrieve_venue_account_balance(
+		venue      = @context[:venue].to_s,
+		accountid  = @context[:accountid],
+		venuekeyid = @context[:venuekeyid] )
+
 		uripath   = "/venues/exchanges/" + venue + "/accounts/" + accountid + "/balance"
 		uriparams = "venueKeyId=" + venuekeyid 
 		errormsg  = "Retrieval of venue account's balance for account %s failed." % accountid
@@ -263,23 +297,38 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 	end
 
 	# Get account balance for symbol
-	def retrieve_venue_account_balance_symbol( venue, accountid, venuekeyid, symbol )
-		@balance = nil
+	def retrieve_venue_account_balance_symbol(
+		symbol,
+		venue      = @context[:venue].to_s,
+		accountid  = @context[:accountid],
+		venuekeyid = @context[:venuekeyid] )
+
+		symbol = symbol.downcase
+		$balance = nil
 		# TODO: Check timestamp, if too old, update balances
+		# Retrieve all balances for account
 		@balances = self.retrieve_venue_account_balance( venue, accountid, venuekeyid )
-		pp @balances if VERBOSITY >= 2
+		# Find the balance for the symbol we want
 		@balances["assets"].each do |asset|
-			@balance = asset["amount"] if asset["currency"] == symbol.downcase
+			$balance = asset["amount"] if asset["currency"] == symbol
 		end
-		return @balance
+		# Raise an exception if the requested symbol is not found
+		raise "No balance returned for currency symbol \"%s\"" % symbol if ! $balance
+		# Return balance for requested symbol
+		return $balance
 	end
 
 	# Return an array of hashes of a venue account's orders
-	# Accepts optional parameters for orders statuses for filtering results
-	def retrieve_venue_account_orders( venue, accountid, venuekeyid, *statuses )
+	# Accepts optional array of orders statuses for filtering results
+	def retrieve_venue_account_orders(
+		status_filters = [],
+		venue          = @context[:venue].to_s,
+		accountid      = @context[:accountid],
+		venuekeyid     = @context[:venuekeyid] )
+
 		uripath   = "/venues/exchanges/" + venue + "/accounts/" + accountid + "/orders"
 		uriparams = "venueKeyId=" + venuekeyid 
-		statuses.each do |status|
+		status_filters.each do |status|
 			uriparams << "&status=" + status.to_s
 		end
 		errormsg  = "Retrieval of venue account's orders for account %s failed." % accountid
@@ -287,7 +336,12 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 	end
 
 	# Return an hash of a venue account's single order
-	def retrieve_venue_account_order( venue, accountid, venuekeyid, orderid )
+	def retrieve_venue_account_order(
+		orderid,
+		venue      = @context[:venue].to_s,
+		accountid  = @context[:accountid],
+		venuekeyid = @context[:venuekeyid] )
+
 		uripath   = "/venues/exchanges/" + venue + "/accounts/" + accountid + "/orders/" + orderid
 		uriparams = "venueKeyId=" + venuekeyid 
 		errormsg  = "Retrieval of venue account's order %s for account %s failed." % [orderid, accountid]
@@ -295,7 +349,14 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 	end
 
 	# Create a new market order under a venue account
-	def create_venue_account_order_market( venue, accountid, venuekeyid, side, quantity, market )
+	def create_venue_account_order_market(
+		side,
+		quantity,
+		market,
+		venue      = @context[:venue].to_s,
+		accountid  = @context[:accountid],
+		venuekeyid = @context[:venuekeyid] )
+
 		uripath  = "/venues/exchanges/" + venue + "/accounts/" + accountid + "/orders"
 		errormsg = "Creation of new market order for account %s failed." % accountid
 		body     = {
@@ -310,7 +371,15 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 	end
 
 	# Create a new limit order under a venue account
-	def create_venue_account_order_limit( venue, accountid, venuekeyid, side, quantity, price, market )
+	def create_venue_account_order_limit( 
+		side,
+		quantity,
+		price,
+		market,
+		venue      = @context[:venue].to_s,
+		accountid  = @context[:accountid],
+		venuekeyid = @context[:venuekeyid] )
+
 		uripath  = "/venues/exchanges/" + venue + "/accounts/" + accountid + "/orders"
 		errormsg = "Creation of new limit order for account %s failed." % accountid
 		body     = {
@@ -326,7 +395,12 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 	end
 
 	# Delete (cancel) a venue account's open order
-	def delete_venue_account_order( venue, accountid, venuekeyid, orderid )
+	def delete_venue_account_order(
+		orderid,
+		venue      = @context[:venue].to_s,
+		accountid  = @context[:accountid],
+		venuekeyid = @context[:venuekeyid] )
+
 		uripath   = "/venues/exchanges/" + venue + "/accounts/" + accountid + "/orders/" + orderid
 		uriparams = "venueKeyId=" + venuekeyid 
 		errormsg  = "Cancellation of venue account's order %s for account %s failed." % [orderid, accountid]
@@ -334,7 +408,11 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 	end
 
 	# Return an array of hashes of a venue account's trades
-	def retrieve_venue_account_trades( venue, accountid, venuekeyid )
+	def retrieve_venue_account_trades(
+		venue      = @context[:venue].to_s,
+		accountid  = @context[:accountid],
+		venuekeyid = @context[:venuekeyid] )
+
 		uripath   = "/venues/exchanges/" + venue + "/accounts/" + accountid + "/trades"
 		uriparams = "venueKeyId=" + venuekeyid 
 		errormsg  = "Retrieval of venue account's orders for account %s failed." % accountid
@@ -342,7 +420,12 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 	end
 
 	# Return a hashe of a venue account's trade
-	def retrieve_venue_account_trade( venue, accountid, venuekeyid, tradeid )
+	def retrieve_venue_account_trade(
+		tradeid,
+		venue      = @context[:venue].to_s,
+		accountid  = @context[:accountid],
+		venuekeyid = @context[:venuekeyid] )
+
 		uripath   = "/venues/exchanges/" + venue + "/accounts/" + accountid + "/trades/" + tradeid
 		uriparams = "venueKeyId=" + venuekeyid 
 		errormsg  = "Retrieval of venue account's trade %s for account %s failed." % [tradeid, accountid]
@@ -353,7 +436,12 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 	# CMA API Methods
 
 	# Return a hash of a venue market's order book
-	def retrieve_venue_market_orderbook( venue, market, side = nil, limit = nil )
+	def retrieve_venue_market_orderbook(
+		market,
+		side  = nil,
+		limit = nil,
+		venue = @context[:venue].to_s)
+
 		uripath   = "/venues/" + venue + "/markets/" + market + "/orderbook"
 		uriparams = ""
 		uriparams << "&side=" + side if side
@@ -363,7 +451,13 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 	end
 
 	# Return an array of a venue market's ticker hashes
-	def retrieve_venue_market_tickers( venue, market, from = (Time.now - 60).to_i, to = nil, cursor = nil )
+	def retrieve_venue_market_tickers(
+		market,
+		from   = (Time.now - 60).to_i*1000, # last one minute in milliseconds
+		to     = nil, # to defaults to Time.now within Cryptomnio
+		cursor = nil,
+		venue  = @context[:venue].to_s)
+
 		uripath    = "/venues/"  + venue + "/markets/" + market + "/ticker"
 		uriparams  = "from=%s"  % from
 		uriparams << "&to=%s"   % to     if to
@@ -373,14 +467,10 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 
 	# Return a venue market's most current ticker hash
 	def retrieve_venue_market_ticker( venue, market )
-		tickers = self.retrieve_venue_market_tickers( venue, market ) 
+		# Call retrieve_venue_market_tickers to request a single ticker (last 15 seconds)
+		tickers = self.retrieve_venue_market_tickers( venue, market, (Time.now - 15).to_i*1000 ) 
+		# Return the last ticker in the array (in case somehow we got back more than one)
 		count =  tickers['tickers'].count
-		if VERBOSITY >= 2
-			puts "Found %d tickers" % count
-			puts "Index 0: %s" % tickers['tickers'][0].inspect
-			puts "Index %d: %s" % [ count - 1, tickers['tickers'][count - 1].inspect ]
-			puts "Cursor: %d" % tickers['cursor']
-		end
 		return tickers['tickers'][count - 1]
 	end
 
@@ -398,6 +488,7 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		# Check for required API hostnames
 		raise "Missing Configuration Parameter: api_host_core"    if ! @config[:api_host_core]
 		raise "Missing Configuration Parameter: api_host_cma"     if ! @config[:api_host_cma]
+
 		# Check for required Authentication Credentials
 		raise "Missing Configuration Parameter: authtype"         if ! @config[:authtype]
 		case @config[:authtype]
@@ -410,9 +501,23 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 			else
 		end
 
-		# Store method config variables in an instance variable
+		# Check for at least one contexts (venue+account)
+		raise "Missing Configuration Paramters: contexts"         if @config[:contexts].count < 1
+
+		# Check configured contexts and validate them by switching to them
+		puts "Checking all configured contexts (venue + account) for required parameters" if VERBOSITY >= 3
+		@config[:contexts].each do | label, paramhash |
+			self.context_switch( label )
+		end
+
+		# Switch back to the first context by default
+		puts "Switching back to the first context by default" if VERBOSITY >= 3
+		label = @config[:contexts].keys[0]
+		self.context_switch( label )
+
+		# Output
 		if VERBOSITY >= 1
-			puts "Configuration:"
+			puts "Startup Configuration:"
 			p @config
 		end
 	end
@@ -441,9 +546,13 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		when response.code == 404
 			raise "Error: Missing Resource"
 			return false
+		when response.code == 504
+			# Gateway Timeout
+			raise "%s: [%d]: %s" % [ thisfailure, response.code, response ] 
+			return false
 		when response.code != 200
 			# Catch-all: Anything other than success
-			raise thisfailure
+			raise "%s: [%d]: %s" % [ thisfailure, response.code, response ] 
 			return false
 		else
 			# Success!
