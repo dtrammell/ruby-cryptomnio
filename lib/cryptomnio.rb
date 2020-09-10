@@ -314,8 +314,8 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		end
 		# Raise an exception if the requested symbol is not found
 		raise "No balance returned for currency symbol \"%s\"" % symbol if ! $balance
-		# Return balance for requested symbol
-		return $balance
+		# Return balance for requested symbol as a floating-point integer
+		return $balance.to_f
 	end
 
 	# Return an array of hashes of a venue account's orders
@@ -462,7 +462,23 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		uriparams  = "from=%s"  % from
 		uriparams << "&to=%s"   % to     if to
 		uriparams << "&cursor=" + cursor if cursor
-		return self._rest_call( :get, :cma, uripath, uriparams, "Retrieval of venue's market's market ticker failed." )
+
+		retries = 0
+		begin
+			result = self._rest_call( :get, :cma, uripath, uriparams, "Retrieval of venue's market's market ticker failed." )
+			raise "Error: Empty set of tickers received" if result['tickers'].count < 1
+			return result
+		rescue => e
+			case
+				when retries <= 3
+					retries += 1
+					sleep 1
+					retry
+				else
+					raise "Error: Received empty set of tickers for 3 retries."
+					return false
+			end	
+		end
 	end
 
 	# Return a venue market's most current ticker hash
@@ -473,7 +489,10 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		# Call retrieve_venue_market_tickers to request a single ticker (last 20 seconds)
 		tickers = self.retrieve_venue_market_tickers( market, (Time.now.to_i - 20)*1000, nil, nil, venue ) 
 		# Return the last ticker in the array (in case somehow we got back more than one)
-		count =  tickers['tickers'].count
+		count = tickers['tickers'].count
+
+		# Output
+		puts "Ticker: %s" % tickers['tickers'][count - 1] if VERBOSITY >= 2
 		return tickers['tickers'][count - 1]
 	end
 
@@ -495,13 +514,14 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		# Check for required Authentication Credentials
 		raise "Missing Configuration Parameter: authtype"         if ! @config[:authtype]
 		case @config[:authtype]
-			when "Basic"
+			when 'Basic'
 				raise "Missing Configuration Parameter: username"   if ! @config[:username]
 				raise "Missing Configuration Parameter: password"   if ! @config[:password]
-			when "Cryptomnio:"
+			when 'Cryptomnio'
 				raise "Missing Configuration Parameter: access_key" if ! @config[:access_key]
 				raise "Missing Configuration Parameter: secret_key" if ! @config[:secret_key]
 			else
+				raise "Unrecognized Authentication Type: %s" % @config[:authtype]
 		end
 
 		# Check for at least one contexts (venue+account)
@@ -519,7 +539,7 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		self.context_switch( label )
 
 		# Output
-		if VERBOSITY >= 1
+		if VERBOSITY >= 2
 			puts "Startup Configuration:"
 			p @config
 		end
@@ -549,8 +569,11 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		when response.code == 404
 			raise "Error: Missing Resource"
 			return false
+		when response.code == 502
+			# Bad Gateway
+			raise "%s: [%d]: %s" % [ thisfailure, response.code, response ]
 		when response.code == 504
-			# Gateway Timeout
+			# Gateway Timeout (temporary error)
 			raise "%s: [%d]: %s" % [ thisfailure, response.code, response ] 
 			return false
 		when response.code != 200
