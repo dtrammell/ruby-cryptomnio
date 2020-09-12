@@ -6,32 +6,35 @@ require 'json'
 # This is the root Cryptomnio object Class.  It contains global constants.
 
 class Cryptomnio
-	# The name of the Gem
-	NAME        = "Cryptomnio Ruby Gem"
-	# The name of the Gem's Author
-	AUTHOR      = "Dustin D. Trammell"
-	# The publication date of the current Gem version
-	DATE        = "2020-08-29"
-	# The Gem version
-	GEM_VERSION = "0.0.2.pre"
-	# The Cryptomnio API Version
-	API_VERSION = "1.0.0"
-	#URI_VERSION = "/v1"
-	URI_VERSION = ""
+	attr_reader   :VERSION
+	attr_reader   :API_VERSION
 
-	# Instance Variables
-
-	##
 	# Creates a new Cryptomnio object
+	def initialize
+		##
+		# Class Instance Variables
 
-	def initalize
-		puts "Cryptomnio Initalized" if VERBOSITY >= 1
+		# The name of the Gem
+		@NAME        = "Cryptomnio Ruby Gem"
+		# The name of the Gem's Author
+		@AUTHOR      = "Dustin D. Trammell"
+		# The publication date of the current Gem version
+		@DATE        = "2020-08-29"
+		# The Gem version
+		@VERSION     = "0.0.2.pre"
+		# The Cryptomnio API Version
+		@API_VERSION = "1.0.0"
+		# API URI Path Version Slug @URI_VERSION = "/v1"
+		@URI_VERSION = ""
+
+		puts "Cryptomnio Initalized" if $VERBOSE
 	end
 
+	# Returns the Gem information
 	def geminfo
-		info = NAME + " " + GEM_VERSION + "\n"
-		info << DATE + " - " + AUTHOR + "\n"
-		info << "Cryptomnio API Version: " + API_VERSION + "\n"
+		info  = @NAME + " "   + @VERSION + "\n"
+		info << @DATE + " - " + @AUTHOR  + "\n"
+		info << "Cryptomnio API Version: " + @VERSION + "\n"
 
 		return info
 	end
@@ -70,7 +73,9 @@ class Cryptomnio::REST < Cryptomnio
 	# the RestClient's proxy setting.
 
 	def initalize
+		# Call Superlcass initialize
 		super
+
 		# Get the HTTP proxy from the environment (if there is one)
 		RestClient.proxy = ENV['http_proxy'] if ENV['http_proxy']
 	end
@@ -86,11 +91,11 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 
 	# Switch Object's Context (Account + Venue to operate as)
 	def context_switch( label )
-		puts "Switching to context \"%s\"" % label if VERBOSITY >= 3
+		puts "Switching to context \"%s\"" % label if $DEBUG
 
 		# Validate that a context for label exists
 		raise "No context found for label: %s" % label if ! @config[:contexts][label]
-		puts @config[:contexts][label].inspect if VERBOSITY >= 3
+		puts @config[:contexts][label].inspect if $DEBUG
 
 		# Validate that the required parameters exist
 		raise "Missing Configuration Parameter: contexts[:venue]"      if ! @config[:contexts][label][:venue]
@@ -101,60 +106,23 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		@context = @config[:contexts][label]
 
 		# Return true on success
-		puts "Context Switch Successful!" if VERBOSITY >= 3
-		return true
-	end
-
-	# Basic Authentication
-	def auth_basic
-		# Store Authentication string for Authorization Header in config
-		@config[:auth_string] = "Basic %s" % Base64.urlsafe_encode64(@config[:username] + ":" + @config[:password])
-
-		# Output
-		if VERBOSITY >= 2
-			puts "Username: %s" % @config[:username]
-			puts "Password: %s" % @config[:password]
-			# TODO: Find better test call to use
-			puts "Requesting: %s%s" % [ @config[:apiurl], "/exchange-keys" ]
-			puts "Authorization: %s" % @config[:auth_string]
-		end
-
-		# Test Authentication
-		begin
-			res = RestClient.get( @config[:apiurl] + "/exchange-keys", { "Authorization" => @config[:auth_string]} )
-		rescue => e
-			puts "%s: %s" % [ e.result, e.response ]
-		end
-		#res = RestClient::Request.execute(
-		#	method:	:get,
-		#	url:		@config[:apiurl] + "/",
-		#	headers:	{ "Authorization" => @config[:auth_string] }
-		#)
-
-		# Test for Failure and raise exception
-		if res.code == 401
-			raise "Cryptomnio Basic Authentication for user %s failed." % @config[:username]
-			return false
-		end
-
-		# Success
-		puts JSON.parse(res) if VERBOSITY >= 2
+		puts "Context Switch Successful!" if $DEBUG
 		return true
 	end
 
 	# Cryptomnio Key Authentication
 	def auth_cryptomnio( method, uripath )
-		puts "Building Authentication Credentials" if VERBOSITY >= 2
+		puts "Building Authentication Credentials" if $VERBOSE
 
 		# Create concatenated method and base URL path string
 		methodpath = method.to_s.upcase + uripath # convert RestClient's method symbol to uppercase string
-		puts "	Method+Path = %s" % methodpath if VERBOSITY >= 2
+		puts "	Method+Path = %s" % methodpath if $DEBUG
 
 		# Create HMAC SHA-512 authentication hash of methodpath using secret key
 		@config[:auth_string] = Base64.encode64(OpenSSL::HMAC.digest('sha512', @config[:secret_key], methodpath)).split.join # .split.join is to remove '/n' inserted into signature by HMAC
 
 		# Output
-		if VERBOSITY >= 2
+		if $DEBUG
 			puts "	Access-Key: %s" % @config[:access_key]
 			puts "	Signature:  %s" % @config[:auth_string]
 			puts
@@ -169,11 +137,11 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		method   = :get 
 		endpoint = "/venues"
 		#endpoint = "/nope"
-		uripath  = URI_VERSION + endpoint
+		uripath  = @URI_VERSION + endpoint
 		signature = self.auth_cryptomnio( method, uripath )
 
-		puts "Testing Cryptomnio Key authentication" if VERBOSITY >= 1
-		if VERBOSITY >= 2
+		puts "Testing Cryptomnio Key authentication" if $VERBOSE
+		if $DEBUG
 			puts "	Requesting: %s %s%s" % [ method, @config[:apiurl], uripath ]
 			puts "	Access-Key: %s"      % @config[:access_key]
 			puts "	Signature:  %s"      % signature
@@ -190,14 +158,14 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 	# Provides RestClient call with needed authentication headers and error handling
 	def _rest_call( method = :get, api = :core, uripath = "/", uriparameters = nil, error_string = "REST API Call Failed", body = nil )
 		# Get the HMAC SHA-512 hash signature value for the method+URIpath
-		signature = self.auth_cryptomnio( method, URI_VERSION + uripath )
+		signature = self.auth_cryptomnio( method, @URI_VERSION + uripath )
 
 		# Build the URI from the URIpath and optional parameters
 		case api
 			when :core
-				uri = "https://" + @config[:api_host_core] + URI_VERSION + uripath
+				uri = "https://" + @config[:api_host_core] + @URI_VERSION + uripath
 			when :cma
-				uri = "https://" + @config[:api_host_cma] + URI_VERSION + uripath
+				uri = "https://" + @config[:api_host_cma] + @URI_VERSION + uripath
 			else
 				raise "Unknown API (%s) referenced" % api
 		end
@@ -225,7 +193,7 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 				|response, request, result, &block|
 
 				# Verbose output
-				if VERBOSITY >= 3
+				if $DEBUG
 					puts "Request:      %s: %s" % [ request.method.upcase, request.uri ]
 					puts "Headers:      %s"     % [ request.headers ]
 					puts "POST payload: %s"     % [ body ] if body
@@ -240,11 +208,11 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 				case api
 					when :core
 						responsebody = JSON.parse(response)["body"]
-						pp responsebody if VERBOSITY >= 2 
+						pp responsebody if $DEBUG
 						return responsebody 
 					when :cma
 						responsebody = JSON.parse(response)
-						pp responsebody if VERBOSITY >= 2 
+						pp responsebody if $DEBUG
 						return responsebody 
 					else
 						raise "Unknown API (%s) referenced" % api
@@ -492,8 +460,46 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		count = tickers['tickers'].count
 
 		# Output
-		puts "Ticker: %s" % tickers['tickers'][count - 1] if VERBOSITY >= 2
+		puts "Ticker: %s" % tickers['tickers'][count - 1] if $VERBOSE
+
+		# Return the most recent ticker from the array
 		return tickers['tickers'][count - 1]
+	end
+
+	# Return a venue market's recent trades array
+	def retrieve_venue_market_trades(
+		market,
+		limit = nil,
+		venue = @context[:venue].to_s )
+
+		uripath   = "/venues/"  + venue + "/markets/" + market + "/trades"
+		uriparams = "&limit=%s" % limit if limit
+
+		retries = 0
+		begin
+			result = self._rest_call( :get, :cma, uripath, uriparams, "Retrieval of venue's market's market ticker failed." )
+			raise "Error: Empty set of market trades received" if result.count < 1
+			return result
+		rescue => e
+			case
+				when retries <= 3
+					retries += 1
+					sleep 1
+					retry
+				else
+					raise "Error: Received empty set of market trades for 3 retries."
+					return false
+			end	
+		end
+
+		# Output
+		if $VERBOSE
+			puts "Trades:" % tickers['tickers'][count - 1] if $VERBOSE
+			pp trades
+		end
+
+		# Return the trades array
+		return trades
 	end
 
 	##
@@ -528,19 +534,19 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		raise "Missing Configuration Paramters: contexts"         if @config[:contexts].count < 1
 
 		# Check configured contexts and validate them by switching to them
-		puts "Checking all configured contexts (venue + account) for required parameters" if VERBOSITY >= 3
+		puts "Checking all configured contexts (venue + account) for required parameters" if $DEBUG
 		@config[:contexts].each do | label, paramhash |
 			self.context_switch( label )
 		end
 
 		# Switch back to the first context by default
-		puts "Switching back to the first context by default" if VERBOSITY >= 3
+		puts "Switching back to the first context by default" if $DEBUG
 		label = @config[:contexts].keys[0]
 		self.context_switch( label )
 
 		# Output
-		if VERBOSITY >= 2
-			puts "Startup Configuration:"
+		if $VERBOSE
+			puts "Cryptomnio Startup Configuration:"
 			p @config
 		end
 	end
