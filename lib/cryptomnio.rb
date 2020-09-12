@@ -21,7 +21,7 @@ class Cryptomnio
 		# The publication date of the current Gem version
 		@DATE        = "2020-08-29"
 		# The Gem version
-		@VERSION     = "0.0.2.pre"
+		@VERSION     = "0.0.3.pre"
 		# The Cryptomnio API Version
 		@API_VERSION = "1.0.0"
 		# API URI Path Version Slug @URI_VERSION = "/v1"
