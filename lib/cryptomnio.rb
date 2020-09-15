@@ -317,7 +317,7 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 	end
 
 	# Create a new market order under a venue account
-	def create_venue_account_order_market(
+	def put_account_order_market(
 		side,
 		quantity,
 		market,
@@ -339,7 +339,7 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 	end
 
 	# Create a new limit order under a venue account
-	def create_venue_account_order_limit( 
+	def put_account_order_limit( 
 		side,
 		quantity,
 		price,
@@ -363,7 +363,7 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 	end
 
 	# Delete (cancel) a venue account's open order
-	def delete_venue_account_order(
+	def del_account_order(
 		orderid,
 		venue      = @context[:venue].to_s,
 		accountid  = @context[:accountid],
@@ -478,7 +478,17 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		retries = 0
 		begin
 			result = self._rest_call( :get, :cma, uripath, uriparams, "Retrieval of venue's market's market ticker failed." )
-			raise "Error: Empty set of market trades received" if result.count < 1
+
+			# Raise an execption if the result is null or empty
+			raise "Error: Empty set of market trades received" if ! result || result.count < 1
+
+			# Output
+			if $VERBOSE
+				puts "Trades:\n"
+				pp result
+			end
+
+			# Return the trades array
 			return result
 		rescue => e
 			case
@@ -492,14 +502,6 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 			end	
 		end
 
-		# Output
-		if $VERBOSE
-			puts "Trades:" % tickers['tickers'][count - 1] if $VERBOSE
-			pp trades
-		end
-
-		# Return the trades array
-		return trades
 	end
 
 	# Return an array of period data
@@ -520,7 +522,17 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		retries = 0
 		begin
 			result = self._rest_call( :get, :cma, uripath, uriparams, "Retrieval of venue's market's market periods failed." )
-			raise "Error: Empty set of market periods received" if result.count < 1
+			
+			# Raise an execption if the result is null or empty
+			raise "Error: Empty set of market periods received" if ! result || result.count < 1
+			
+			# Output
+			if $VERBOSE
+				puts "Periods:\n"
+				pp result
+			end
+
+			# Return the periods array
 			return result
 		rescue => e
 			case
@@ -533,9 +545,6 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 					return false
 			end	
 		end
-
-		# Return the periods array
-		return result
 	end
 
 	# Return a momentum value for a defined period of time
@@ -556,8 +565,15 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		retries = 0
 		begin
 			result = self._rest_call( :get, :cma, uripath, uriparams, "Retrieval of venue's market's market momentum failed." )
+			
+			# Raise an execption if the result is null or empty
 			raise "Error: Empty set of market momentum received" if ! result || result.count < 1
-			return result
+			
+			# Output
+			puts "Momentum: %f\n" % result['price_change'].to_f if $VERBOSE
+
+			# Return momentum value
+			return result['price_change'].to_f
 		rescue => e
 			case
 				when retries <= 3
@@ -569,9 +585,6 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 					return false
 			end	
 		end
-
-		# Return momentum value
-		return result[:price_change].to_f
 	end
 
 	# Return an exponential moving average value for a defined period of time
@@ -592,8 +605,17 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		retries = 0
 		begin
 			result = self._rest_call( :get, :cma, uripath, uriparams, "Retrieval of venue's market's market Exponential Moving Average (EMA) failed." )
+			
+			# Raise an execption if the result is null or empty
 			raise "Error: Empty set of market Exponential Moving Average (EMA) received" if ! result || result.count < 1
-			return result
+			
+			# Output
+			puts "EMA: %f\n" % result['ema'].to_f if $VERBOSE
+
+			# Return momentum value
+			
+			# Return momentum value
+			return result[:price_change].to_f
 		rescue => e
 			case
 				when retries <= 3
@@ -606,8 +628,6 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 			end	
 		end
 
-		# Return momentum value
-		return result[:price_change].to_f
 	end
 
 	##
