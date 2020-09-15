@@ -229,12 +229,12 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 	# CORE API Venue and Market function methods
 
 	# Return an array of supported Venues
-	def retrieve_venues
+	def get_venues
 		return self._rest_call( :get, :core, "/venues", nil, "Retrieval of supported venues failed." )
 	end
 
 	# Return an array of hashes of a venue's markets
-	def retrieve_venue_markets( venue )
+	def get_markets( venue )
 		uripath = "/venues/" + venue + "/markets"
 		return self._rest_call( :get, :core, uripath, nil, "Retrieval of supported venue's markets failed." )
 	end
@@ -243,7 +243,7 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 	# CORE API Account function methods
 
 	# Return a hash of a venue account
-	def retrieve_venue_account(
+	def get_account(
 		venue     = @context[:venue].to_s,
 		accountid = @context[:accountid] )
 
@@ -253,7 +253,7 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 	end
 
 	# Return an array of hashes of a venue account's balances 
-	def retrieve_venue_account_balance(
+	def get_account_balance(
 		venue      = @context[:venue].to_s,
 		accountid  = @context[:accountid],
 		venuekeyid = @context[:venuekeyid] )
@@ -265,7 +265,7 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 	end
 
 	# Get account balance for symbol
-	def retrieve_venue_account_balance_symbol(
+	def get_account_balance_symbol(
 		symbol,
 		venue      = @context[:venue].to_s,
 		accountid  = @context[:accountid],
@@ -275,7 +275,7 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		$balance = nil
 		# TODO: Check cached balance's timestamp, if too old, update balances
 		# Retrieve all balances for account
-		@balances = self.retrieve_venue_account_balance( venue, accountid, venuekeyid )
+		@balances = self.get_account_balance( venue, accountid, venuekeyid )
 		# Find the balance for the symbol we want
 		@balances["assets"].each do |asset|
 			$balance = asset["amount"] if asset["currency"] == symbol
@@ -288,7 +288,7 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 
 	# Return an array of hashes of a venue account's orders
 	# Accepts optional array of orders statuses for filtering results
-	def retrieve_venue_account_orders(
+	def get_account_orders(
 		status_filters = [],
 		venue          = @context[:venue].to_s,
 		accountid      = @context[:accountid],
@@ -304,7 +304,7 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 	end
 
 	# Return an hash of a venue account's single order
-	def retrieve_venue_account_order(
+	def get_account_order(
 		orderid,
 		venue      = @context[:venue].to_s,
 		accountid  = @context[:accountid],
@@ -376,7 +376,7 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 	end
 
 	# Return an array of hashes of a venue account's trades
-	def retrieve_venue_account_trades(
+	def get_account_trades(
 		venue      = @context[:venue].to_s,
 		accountid  = @context[:accountid],
 		venuekeyid = @context[:venuekeyid] )
@@ -388,7 +388,7 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 	end
 
 	# Return a hashe of a venue account's trade
-	def retrieve_venue_account_trade(
+	def get_account_trade(
 		tradeid,
 		venue      = @context[:venue].to_s,
 		accountid  = @context[:accountid],
@@ -404,7 +404,7 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 	# CMA API Methods
 
 	# Return a hash of a venue market's order book
-	def retrieve_venue_market_orderbook(
+	def get_market_orderbook(
 		market,
 		side  = nil,
 		limit = nil,
@@ -419,7 +419,7 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 	end
 
 	# Return an array of a venue market's ticker hashes
-	def retrieve_venue_market_tickers(
+	def get_market_tickers(
 		market,
 		from   = (Time.now - 60).to_i*1000, # last one minute in milliseconds
 		to     = nil, # to defaults to Time.now within Cryptomnio
@@ -450,12 +450,12 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 	end
 
 	# Return a venue market's most current ticker hash
-	def retrieve_venue_market_ticker(
+	def get_market_ticker(
 		market,
 		venue  = @context[:venue].to_s)
 
-		# Call retrieve_venue_market_tickers to request a single ticker (last 20 seconds)
-		tickers = self.retrieve_venue_market_tickers( market, (Time.now.to_i - 20)*1000, nil, nil, venue ) 
+		# Call get_market_tickers to request a single ticker (last 20 seconds)
+		tickers = self.get_market_tickers( market, (Time.now.to_i - 20)*1000, nil, nil, venue ) 
 		# Return the last ticker in the array (in case somehow we got back more than one)
 		count = tickers['tickers'].count
 
@@ -467,7 +467,7 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 	end
 
 	# Return a venue market's recent trades array
-	def retrieve_venue_market_trades(
+	def get_market_trades(
 		market,
 		limit = nil,
 		venue = @context[:venue].to_s )
@@ -500,6 +500,114 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 
 		# Return the trades array
 		return trades
+	end
+
+	# Return an array of period data
+	def get_market_periods(
+		market,
+		periodlength,
+		periodcount   = nil, # periodCount defaults to 10 within Cryptomnio
+		to            = nil, # to defaults to Time.now within Cryptomnio
+		limit         = nil,
+		venue         = @context[:venue].to_s)
+
+		uripath    = "/venues/"  + venue + "/markets/" + market + "/periods"
+		uriparams  = "periodLength=%s" % periodlength
+		uriparams << "&periodCount=%d" % periodcount   if periodcount
+		uriparams << "&to="            + to            if to
+		uriparams << "&limit="         + limit         if limit
+
+		retries = 0
+		begin
+			result = self._rest_call( :get, :cma, uripath, uriparams, "Retrieval of venue's market's market periods failed." )
+			raise "Error: Empty set of market periods received" if result.count < 1
+			return result
+		rescue => e
+			case
+				when retries <= 3
+					retries += 1
+					sleep 1
+					retry
+				else
+					raise "Error: Received empty set of market periods for 3 retries."
+					return false
+			end	
+		end
+
+		# Return the periods array
+		return result
+	end
+
+	# Return a momentum value for a defined period of time
+	def get_market_momentum(
+		market,
+		type,
+		periodlength,
+		periodcount   = nil, # periodCount defaults to 10 within Cryptomnio
+		to            = nil, # to defaults to Time.now within Cryptomnio
+		venue         = @context[:venue].to_s)
+
+		uripath    = "/venues/"  + venue + "/markets/" + market + "/momentum"
+		uriparams  = "type="          + type
+		uriparams << "&periodLength=" + periodlength
+		uriparams << "&periodCount="  + periodcount.to_s if periodcount
+		uriparams << "&to="           + to               if to
+
+		retries = 0
+		begin
+			result = self._rest_call( :get, :cma, uripath, uriparams, "Retrieval of venue's market's market momentum failed." )
+			raise "Error: Empty set of market momentum received" if ! result || result.count < 1
+			return result
+		rescue => e
+			case
+				when retries <= 3
+					retries += 1
+					sleep 1
+					retry
+				else
+					raise "Error: Received empty set of market momentum for 3 retries."
+					return false
+			end	
+		end
+
+		# Return momentum value
+		return result[:price_change].to_f
+	end
+
+	# Return an exponential moving average value for a defined period of time
+	def get_market_ema(
+		market,
+		type,
+		periodlength,
+		periodcount   = nil, # periodCount defaults to 10 within Cryptomnio
+		to            = nil, # to defaults to Time.now within Cryptomnio
+		venue         = @context[:venue].to_s)
+
+		uripath    = "/venues/"  + venue + "/markets/" + market + "/ema"
+		uriparams  = "type="          + type
+		uriparams << "&periodLength=" + periodlength
+		uriparams << "&periodCount="  + periodcount.to_s if periodcount
+		uriparams << "&to="           + to               if to
+
+		retries = 0
+		begin
+			result = self._rest_call( :get, :cma, uripath, uriparams, "Retrieval of venue's market's market Exponential Moving Average (EMA) failed." )
+			raise "Error: Empty set of market Exponential Moving Average (EMA) received" if ! result || result.count < 1
+			return result
+		rescue => e
+			case
+				when retries <= 3
+					retries += 1
+					sleep 1
+					retry
+				else
+					raise "Error: Received empty set of market Exponential Moving Average (EMA) for 3 retries."
+					return false
+			end	
+		end
+
+		# Return momentum value
+		return result[:price_change].to_f
 	end
 
 	##
