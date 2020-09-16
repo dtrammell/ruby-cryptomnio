@@ -516,8 +516,8 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		uripath    = "/venues/"  + venue + "/markets/" + market + "/periods"
 		uriparams  = "periodLength=%s" % periodlength
 		uriparams << "&periodCount=%d" % periodcount   if periodcount
-		uriparams << "&to="            + to            if to
-		uriparams << "&limit="         + limit         if limit
+		uriparams << "&to=%d"          % to            if to
+		uriparams << "&limit=%d"       % limit         if limit
 
 		retries = 0
 		begin
@@ -596,7 +596,7 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		to            = nil, # to defaults to Time.now within Cryptomnio
 		venue         = @context[:venue].to_s)
 
-		uripath    = "/venues/"  + venue + "/markets/" + market + "/ema"
+		uripath    = "/venues/"  + venue + "/markets/" + market + "/averages/ema"
 		uriparams  = "type="          + type
 		uriparams << "&periodLength=" + periodlength
 		uriparams << "&periodCount="  + periodcount.to_s if periodcount
@@ -610,12 +610,13 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 			raise "Error: Empty set of market Exponential Moving Average (EMA) received" if ! result || result.count < 1
 			
 			# Output
-			puts "EMA: %f\n" % result['ema'].to_f if $VERBOSE
+			if $VERBOSE
+				puts "EMA sets:\n"
+				pp result
+			end
 
-			# Return momentum value
-			
-			# Return momentum value
-			return result[:price_change].to_f
+			# Return averages array
+			return result
 		rescue => e
 			case
 				when retries <= 3
