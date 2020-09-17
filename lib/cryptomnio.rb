@@ -208,11 +208,11 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 				case api
 					when :core
 						responsebody = JSON.parse(response)["body"]
-						pp responsebody if $DEBUG
+						#pp responsebody if $DEBUG
 						return responsebody 
 					when :cma
 						responsebody = JSON.parse(response)
-						pp responsebody if $DEBUG
+						#pp responsebody if $DEBUG
 						return responsebody 
 					else
 						raise "Unknown API (%s) referenced" % api
@@ -412,9 +412,10 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 
 		uripath   = "/venues/" + venue + "/markets/" + market + "/orderbook"
 		uriparams = ""
-		uriparams << "&side=" + side if side
-		uriparams << "&limit=" + limit if limit
+		uriparams << "&side=%s"  % side  if side
+		uriparams << "&limit=%d" % limit if limit
 		uriparams = nil if uriparams.length == 0
+
 		return self._rest_call( :get, :cma, uripath, uriparams, "Retrieval of venue's market's order book failed." )
 	end
 
@@ -426,10 +427,10 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		cursor = nil,
 		venue  = @context[:venue].to_s)
 
-		uripath    = "/venues/"  + venue + "/markets/" + market + "/ticker"
-		uriparams  = "from=%s"  % from
-		uriparams << "&to=%s"   % to     if to
-		uriparams << "&cursor=" + cursor if cursor
+		uripath    = "/venues/" + venue + "/markets/" + market + "/ticker"
+		uriparams  = "from=%s"    % from
+		uriparams << "&to=%s"     % to     if to
+		uriparams << "&cursor=%d" % cursor if cursor
 
 		retries = 0
 		begin
@@ -513,11 +514,11 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		limit         = nil,
 		venue         = @context[:venue].to_s)
 
-		uripath    = "/venues/"  + venue + "/markets/" + market + "/periods"
+		uripath    = "/venues/" + venue + "/markets/" + market + "/periods"
 		uriparams  = "periodLength=%s" % periodlength
-		uriparams << "&periodCount=%d" % periodcount   if periodcount
-		uriparams << "&to=%d"          % to            if to
-		uriparams << "&limit=%d"       % limit         if limit
+		uriparams << "&periodCount=%d" % periodcount  if periodcount
+		uriparams << "&to=%d"          % to           if to
+		uriparams << "&limit=%d"       % limit        if limit
 
 		retries = 0
 		begin
@@ -556,11 +557,11 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		to            = nil, # to defaults to Time.now within Cryptomnio
 		venue         = @context[:venue].to_s)
 
-		uripath    = "/venues/"  + venue + "/markets/" + market + "/momentum"
-		uriparams  = "type="          + type
-		uriparams << "&periodLength=" + periodlength
-		uriparams << "&periodCount="  + periodcount.to_s if periodcount
-		uriparams << "&to="           + to               if to
+		uripath    = "/venues/" + venue + "/markets/" + market + "/momentum"
+		uriparams  = "type=%s"          % type
+		uriparams << "&periodLength=%s" % periodlength
+		uriparams << "&periodCount=%d"  % periodcount  if periodcount
+		uriparams << "&to=%d"           % to           if to
 
 		retries = 0
 		begin
@@ -596,11 +597,11 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		to            = nil, # to defaults to Time.now within Cryptomnio
 		venue         = @context[:venue].to_s)
 
-		uripath    = "/venues/"  + venue + "/markets/" + market + "/averages/ema"
-		uriparams  = "type="          + type
-		uriparams << "&periodLength=" + periodlength
-		uriparams << "&periodCount="  + periodcount.to_s if periodcount
-		uriparams << "&to="           + to               if to
+		uripath    = "/venues/" + venue + "/markets/" + market + "/averages/ema"
+		uriparams  = "type=%s"          % type
+		uriparams << "&periodLength=%s" % periodlength
+		uriparams << "&periodCount=%d"  % periodcount   if periodcount
+		uriparams << "&to=%d"           % to            if to
 
 		retries = 0
 		begin
