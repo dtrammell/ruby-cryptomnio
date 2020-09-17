@@ -444,7 +444,7 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 					sleep 1
 					retry
 				else
-					raise "Error: Received empty set of tickers for 3 retries."
+					raise "Error: Received empty set of tickers for 3 retries: %s" % e.message
 					return false
 			end	
 		end
@@ -498,7 +498,7 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 					sleep 1
 					retry
 				else
-					raise "Error: Received empty set of market trades for 3 retries."
+					raise "Error: Received empty set of market trades for 3 retries: %s" % e.message
 					return false
 			end	
 		end
@@ -542,7 +542,7 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 					sleep 1
 					retry
 				else
-					raise "Error: Received empty set of market periods for 3 retries."
+					raise "Error: Received empty set of market periods for 3 retries: %s" % e.message
 					return false
 			end	
 		end
@@ -582,7 +582,7 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 					sleep 1
 					retry
 				else
-					raise "Error: Received empty set of market momentum for 3 retries."
+					raise "Error: Received empty set of market momentum for 3 retries: %s" % e.message
 					return false
 			end	
 		end
@@ -625,7 +625,7 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 					sleep 1
 					retry
 				else
-					raise "Error: Received empty set of market Exponential Moving Average (EMA) for 3 retries."
+					raise "Error: Received empty set of market Exponential Moving Average (EMA) for 3 retries: %s" % e.message
 					return false
 			end	
 		end
