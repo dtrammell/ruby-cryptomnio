@@ -112,7 +112,7 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 
 	# Cryptomnio Key Authentication
 	def auth_cryptomnio( method, uripath )
-		puts "Building Authentication Credentials" if $VERBOSE
+		puts "Building Authentication Credentials" if $DEBUG
 
 		# Create concatenated method and base URL path string
 		methodpath = method.to_s.upcase + uripath # convert RestClient's method symbol to uppercase string
@@ -122,12 +122,13 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		@config[:auth_string] = Base64.encode64(OpenSSL::HMAC.digest('sha512', @config[:secret_key], methodpath)).split.join # .split.join is to remove '/n' inserted into signature by HMAC
 
 		# Output
-		if $DEBUG
+		if $DEBUG && $VERBOSE
 			puts "	Access-Key: %s" % @config[:access_key]
 			puts "	Signature:  %s" % @config[:auth_string]
 			puts
 		end
 
+		# Return the signature
 		return @config[:auth_string]
 	end
 
