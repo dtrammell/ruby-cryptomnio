@@ -141,7 +141,7 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		uripath  = @URI_VERSION + endpoint
 		signature = self.auth_cryptomnio( method, uripath )
 
-		puts "Testing Cryptomnio Key authentication" if $VERBOSE
+		puts "Testing Cryptomnio Key Authentication" if $VERBOSE
 		if $DEBUG
 			puts "	Requesting: %s %s%s" % [ method, @config[:apiurl], uripath ]
 			puts "	Access-Key: %s"      % @config[:access_key]
@@ -485,7 +485,7 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 			raise "Error: Empty set of market trades received" if ! result || result.count < 1
 
 			# Output
-			if $VERBOSE
+			if $DEBUG
 				puts "Trades:\n"
 				pp result
 			end
@@ -529,7 +529,7 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 			raise "Error: Empty set of market periods received" if ! result || result.count < 1
 			
 			# Output
-			if $VERBOSE
+			if $DEBUG
 				puts "Periods:\n"
 				pp result
 			end
@@ -612,7 +612,7 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 			raise "Error: Empty set of market Exponential Moving Average (EMA) received" if ! result || result.count < 1
 			
 			# Output
-			if $VERBOSE
+			if $DEBUG
 				puts "EMA sets:\n"
 				pp result
 			end
@@ -676,7 +676,7 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		self.context_switch( label )
 
 		# Output
-		if $VERBOSE
+		if $DEBUG
 			puts "Cryptomnio Startup Configuration:"
 			p @config
 		end
