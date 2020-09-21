@@ -462,7 +462,7 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		count = tickers['tickers'].count
 
 		# Output
-		puts "Ticker: %s" % tickers['tickers'][count - 1] if $VERBOSE
+		puts "Ticker: %s" % tickers['tickers'][count - 1] if $DEBUG
 
 		# Return the most recent ticker from the array
 		return tickers['tickers'][count - 1]
