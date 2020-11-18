@@ -21,13 +21,13 @@ class Cryptomnio
 		# The publication date of the current Gem version
 		@DATE        = "2020-08-29"
 		# The Gem version
-		@VERSION     = "0.0.3.pre"
+		@VERSION     = "0.1.0"
 		# The Cryptomnio API Version
-		@API_VERSION = "1.0.0"
+		@API_VERSION = "0.1.0"
 		# API URI Path Version Slug @URI_VERSION = "/v1"
 		@URI_VERSION = ""
 
-		puts "Cryptomnio Initalized" if $VERBOSE
+		puts "Cryptomnio Initalized" if $DEBUG
 	end
 
 	# Returns the Gem information
@@ -149,7 +149,7 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		end
 
 		# Test Authentication Call
-		self._rest_call( method, uripath, nil, "Cryptomnio Key Authentication test failed." )
+		self._rest_call( method, api = :core, uripath = uripath, uriparameters = nil, error_string = "Cryptomnio Key Authentication test failed." )
 
 		# Success
 		return true
@@ -221,8 +221,15 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 			end
 		rescue => e
 			# Rescue any exceptions thrown by _check_errors
-			puts e.inspect
-			puts e.message
+
+			# TODO: Retry 3 times with pauses if temporary error
+			
+			# Output
+			puts e.inspect if $DEBUG
+			puts e.message if $DEBUG
+
+			# Pass it on
+			raise e
 		end
 	end
 
@@ -521,6 +528,8 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		uriparams << "&to=%d"          % to           if to
 		uriparams << "&limit=%d"       % limit        if limit
 
+		# TODO: Determine if we have any of the requested periods cached, and instead request only what we don't already have
+
 		retries = 0
 		begin
 			result = self._rest_call( :get, :cma, uripath, uriparams, "Retrieval of venue's market's market periods failed." )
@@ -572,7 +581,7 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 			raise "Error: Empty set of market momentum received" if ! result || result.count < 1
 			
 			# Output
-			puts "Momentum: %f\n" % result['price_change'].to_f if $VERBOSE
+			puts "Momentum: %f\n" % result['price_change'].to_f if $DEBUG
 
 			# Return momentum value
 			return result['price_change'].to_f
@@ -594,6 +603,7 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		market,
 		type,
 		periodlength,
+		periodcalc,
 		periodcount   = nil, # periodCount defaults to 10 within Cryptomnio
 		to            = nil, # to defaults to Time.now within Cryptomnio
 		venue         = @context[:venue].to_s)
@@ -601,6 +611,7 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		uripath    = "/venues/" + venue + "/markets/" + market + "/averages/ema"
 		uriparams  = "type=%s"          % type
 		uriparams << "&periodLength=%s" % periodlength
+		uriparams << "&periodCalc=%d"   % periodcalc
 		uriparams << "&periodCount=%d"  % periodcount   if periodcount
 		uriparams << "&to=%d"           % to            if to
 
@@ -708,17 +719,17 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 			return false
 		when response.code == 502
 			# Bad Gateway
-			raise "%s: [%d]: %s" % [ thisfailure, response.code, response ]
+			raise "Error: %s: [%d]: %s" % [ thisfailure, response.code, response ]
 		when response.code == 504
 			# Gateway Timeout (temporary error)
-			raise "%s: [%d]: %s" % [ thisfailure, response.code, response ] 
+			raise "Temporary Error: %s: [%d]: %s" % [ thisfailure, response.code, response ] 
 			return false
 		when response.code != 200
 			# Catch-all: Anything other than success
-			raise "%s: [%d]: %s" % [ thisfailure, response.code, response ] 
+			raise "Error: %s: [%d]: %s" % [ thisfailure, response.code, response ] 
 			return false
 		else
-			# Success!
+			# 200 Success!
 			return true
 		end
 	end
