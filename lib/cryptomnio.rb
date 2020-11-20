@@ -208,11 +208,11 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 				# TODO: remove this workaround that handles the two APIs differently once they are consistent
 				case api
 					when :core
-						responsebody = JSON.parse(response)["body"]
+						responsebody = JSON.parse(response)['body']
 						#pp responsebody if $DEBUG
 						return responsebody 
 					when :cma
-						responsebody = JSON.parse(response)
+						responsebody = JSON.parse(response)['body']
 						#pp responsebody if $DEBUG
 						return responsebody 
 					else
@@ -430,7 +430,7 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 	# Return an array of a venue market's ticker hashes
 	def get_market_tickers(
 		market,
-		from   = (Time.now - 60).to_i*1000, # last one minute in milliseconds
+		from   = (Time.now - 120).to_i*1000, # last one minute in milliseconds
 		to     = nil, # to defaults to Time.now within Cryptomnio
 		cursor = nil,
 		venue  = @context[:venue].to_s)
@@ -441,6 +441,7 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		uriparams << "&cursor=%d" % cursor if cursor
 
 		retries = 0
+		pause = 4
 		begin
 			result = self._rest_call( :get, :cma, uripath, uriparams, "Retrieval of venue's market's market ticker failed." )
 			raise "Error: Empty set of tickers received" if result['tickers'].count < 1
@@ -449,7 +450,8 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 			case
 				when retries <= 3
 					retries += 1
-					sleep 1
+					sleep pause
+					pause = pause * 2
 					retry
 				else
 					raise "Error: Received empty set of tickers for 3 retries: %s" % e.message
