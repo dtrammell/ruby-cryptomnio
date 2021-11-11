@@ -19,11 +19,11 @@ class Cryptomnio
 		# The name of the Gem's Author
 		@AUTHOR      = "Dustin D. Trammell"
 		# The publication date of the current Gem version
-		@DATE        = "2020-08-29"
+		@DATE        = "2021-11-10"
 		# The Gem version
-		@VERSION     = "0.1.0"
+		@VERSION     = "0.1.1"
 		# The Cryptomnio API Version
-		@API_VERSION = "0.1.0"
+		@API_VERSION = "0.23.1"
 		# API URI Path Version Slug @URI_VERSION = "/v1"
 		@URI_VERSION = ""
 
@@ -395,7 +395,7 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		return self._rest_call( :get, :core, uripath, uriparams, errormsg )
 	end
 
-	# Return a hashe of a venue account's trade
+	# Return a hash of a venue account's trade
 	def get_account_trade(
 		tradeid,
 		venue      = @context[:venue].to_s,
@@ -424,7 +424,39 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		uriparams << "&limit=%d" % limit if limit
 		uriparams = nil if uriparams.length == 0
 
-		return self._rest_call( :get, :cma, uripath, uriparams, "Retrieval of venue's market's order book failed." )
+		return self._rest_call( :get, :cma, uripath, uriparams, "Retrieval of venue market's order book failed." )
+	end
+
+	# Return a hash of a venue market's order book's price at a specified volume
+	def get_market_orderbook_depth_price(
+		market,
+		side   = nil,
+		volume = nil,
+		venue  = @context[:venue].to_s)
+
+		uripath   = "/venues/" + venue + "/markets/" + market + "/orderbook/depth/price"
+		uriparams = ""
+		uriparams << "&side=%s"  % side  if side
+		uriparams << "&volume=%d" % volume if volume
+		uriparams = nil if uriparams.length == 0
+
+		return self._rest_call( :get, :cma, uripath, uriparams, "Retrieval of venue market's order book price at given volume (#{volume}) failed." )
+	end
+
+	# Return a hash of a venue market's order book's volume at a specified price
+	def get_market_orderbook_depth_volume(
+		market,
+		side  = nil,
+		price = nil,
+		venue = @context[:venue].to_s)
+
+		uripath   = "/venues/" + venue + "/markets/" + market + "/orderbook/depth/volume"
+		uriparams = ""
+		uriparams << "&side=%s"  % side  if side
+		uriparams << "&price=%f" % price if price
+		uriparams = nil if uriparams.length == 0
+
+		return self._rest_call( :get, :cma, uripath, uriparams, "Retrieval of venue market's order book volume at given price (#{price}) failed." )
 	end
 
 	# Return an array of a venue market's ticker hashes
