@@ -2,8 +2,8 @@
 
 Gem::Specification.new do |s|
 	s.name    = "cryptomnio"
-	s.version = "0.1.0"
-	s.date    = "2020-11-16"
+	s.version = "0.1.1"
+	s.date    = "2021-11-10"
 	s.summary = "Cryptomnio API Interface"
 	s.description = "A Ruby gem providing an interface to the Cryptomnio API"
 	s.authors     = ["Dustin D. Trammell"]
