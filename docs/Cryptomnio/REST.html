@@ -132,15 +132,17 @@ for the RestClient&#39;s proxy setting.</p>
           
             <div class="method-calls-super">
               Calls superclass method
-              <a href="../Cryptomnio.html#method-i-initalize">Cryptomnio#initalize</a>
+              
             </div>
           
 
           
           <div class="method-source-code" id="initalize-source">
-            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 72</span>
+            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 75</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initalize</span>
+        <span class="ruby-comment"># Call Superlcass initialize</span>
         <span class="ruby-keyword">super</span>
+
         <span class="ruby-comment"># Get the HTTP proxy from the environment (if there is one)</span>
         <span class="ruby-constant">RestClient</span>.<span class="ruby-identifier">proxy</span> = <span class="ruby-constant">ENV</span>[<span class="ruby-string">&#39;http_proxy&#39;</span>] <span class="ruby-keyword">if</span> <span class="ruby-constant">ENV</span>[<span class="ruby-string">&#39;http_proxy&#39;</span>]
 <span class="ruby-keyword">end</span></pre>

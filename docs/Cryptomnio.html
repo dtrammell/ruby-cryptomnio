@@ -71,9 +71,9 @@
 
   <ul class="link-list" role="directory">
     
-    <li ><a href="#method-i-geminfo">#geminfo</a>
+    <li ><a href="#method-c-new">::new</a>
     
-    <li ><a href="#method-i-initalize">#initalize</a>
+    <li ><a href="#method-i-geminfo">#geminfo</a>
     
   </ul>
 </div>
@@ -100,49 +100,101 @@ contains global constants.</p>
     
 
     
-    <section class="constants-list">
+
+    
+    <section class="attribute-method-details" class="method-section">
       <header>
-        <h3>Constants</h3>
+        <h3>Attributes</h3>
       </header>
-      <dl>
+
       
-        <dt id="API_VERSION">API_VERSION
+      <div id="attribute-i-API_VERSION" class="method-detail">
+        <div class="method-heading attribute-method-heading">
+          <span class="method-name">API_VERSION</span><span
+            class="attribute-access-type">[R]</span>
+        </div>
+
+        <div class="method-description">
         
-        <dd><p>The <a href="Cryptomnio.html">Cryptomnio</a> API Version</p>
         
+        
+        </div>
+      </div>
       
-        <dt id="AUTHOR">AUTHOR
+      <div id="attribute-i-VERSION" class="method-detail">
+        <div class="method-heading attribute-method-heading">
+          <span class="method-name">VERSION</span><span
+            class="attribute-access-type">[R]</span>
+        </div>
+
+        <div class="method-description">
         
-        <dd><p>The name of the Gem&#39;s Author</p>
         
+        
+        </div>
+      </div>
       
-        <dt id="DATE">DATE
-        
-        <dd><p>The publication date of the current Gem version</p>
-        
-      
-        <dt id="GEM_VERSION">GEM_VERSION
-        
-        <dd><p>The Gem version</p>
-        
-      
-        <dt id="NAME">NAME
-        
-        <dd><p>The name of the Gem</p>
-        
-      
-        <dt id="URI_VERSION">URI_VERSION
-        
-        <dd><p><a href="Cryptomnio.html#URI_VERSION">URI_VERSION</a> = “/v1”</p>
-        
-      
-      </dl>
     </section>
     
 
     
+     <section id="public-class-5Buntitled-5D-method-details" class="method-section">
+       <header>
+         <h3>Public Class Methods</h3>
+       </header>
 
     
+      <div id="method-c-new" class="method-detail ">
+        
+        <div class="method-heading">
+          <span class="method-name">new</span><span
+            class="method-args">()</span>
+          
+          <span class="method-click-advice">click to toggle source</span>
+          
+        </div>
+        
+
+        <div class="method-description">
+          
+          <p>Creates a new <a href="Cryptomnio.html">Cryptomnio</a> object</p>
+          
+          
+
+          
+          <div class="method-source-code" id="new-source">
+            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 13</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>
+        <span class="ruby-comment">##</span>
+        <span class="ruby-comment"># Class Instance Variables</span>
+
+        <span class="ruby-comment"># The name of the Gem</span>
+        <span class="ruby-ivar">@NAME</span>        = <span class="ruby-string">&quot;Cryptomnio Ruby Gem&quot;</span>
+        <span class="ruby-comment"># The name of the Gem&#39;s Author</span>
+        <span class="ruby-ivar">@AUTHOR</span>      = <span class="ruby-string">&quot;Dustin D. Trammell&quot;</span>
+        <span class="ruby-comment"># The publication date of the current Gem version</span>
+        <span class="ruby-ivar">@DATE</span>        = <span class="ruby-string">&quot;2021-11-10&quot;</span>
+        <span class="ruby-comment"># The Gem version</span>
+        <span class="ruby-ivar">@VERSION</span>     = <span class="ruby-string">&quot;0.1.1&quot;</span>
+        <span class="ruby-comment"># The Cryptomnio API Version</span>
+        <span class="ruby-ivar">@API_VERSION</span> = <span class="ruby-string">&quot;0.23.1&quot;</span>
+        <span class="ruby-comment"># API URI Path Version Slug @URI_VERSION = &quot;/v1&quot;</span>
+        <span class="ruby-ivar">@URI_VERSION</span> = <span class="ruby-string">&quot;&quot;</span>
+
+        <span class="ruby-identifier">puts</span> <span class="ruby-string">&quot;Cryptomnio Initalized&quot;</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">$DEBUG</span>
+<span class="ruby-keyword">end</span></pre>
+          </div>
+          
+        </div>
+
+        
+
+        
+      </div>
+
+    
+    </section>
+  
      <section id="public-instance-5Buntitled-5D-method-details" class="method-section">
        <header>
          <h3>Public Instance Methods</h3>
@@ -162,52 +214,19 @@ contains global constants.</p>
 
         <div class="method-description">
           
-          
+          <p>Returns the Gem information</p>
           
           
 
           
           <div class="method-source-code" id="geminfo-source">
-            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 31</span>
+            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 34</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">geminfo</span>
-        <span class="ruby-identifier">info</span> = <span class="ruby-constant">NAME</span> <span class="ruby-operator">+</span> <span class="ruby-string">&quot; &quot;</span> <span class="ruby-operator">+</span> <span class="ruby-constant">GEM_VERSION</span> <span class="ruby-operator">+</span> <span class="ruby-string">&quot;\n&quot;</span>
-        <span class="ruby-identifier">info</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-constant">DATE</span> <span class="ruby-operator">+</span> <span class="ruby-string">&quot; - &quot;</span> <span class="ruby-operator">+</span> <span class="ruby-constant">AUTHOR</span> <span class="ruby-operator">+</span> <span class="ruby-string">&quot;\n&quot;</span>
-        <span class="ruby-identifier">info</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-string">&quot;Cryptomnio API Version: &quot;</span> <span class="ruby-operator">+</span> <span class="ruby-constant">API_VERSION</span> <span class="ruby-operator">+</span> <span class="ruby-string">&quot;\n&quot;</span>
+        <span class="ruby-identifier">info</span>  = <span class="ruby-ivar">@NAME</span> <span class="ruby-operator">+</span> <span class="ruby-string">&quot; &quot;</span>   <span class="ruby-operator">+</span> <span class="ruby-ivar">@VERSION</span> <span class="ruby-operator">+</span> <span class="ruby-string">&quot;\n&quot;</span>
+        <span class="ruby-identifier">info</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-ivar">@DATE</span> <span class="ruby-operator">+</span> <span class="ruby-string">&quot; - &quot;</span> <span class="ruby-operator">+</span> <span class="ruby-ivar">@AUTHOR</span>  <span class="ruby-operator">+</span> <span class="ruby-string">&quot;\n&quot;</span>
+        <span class="ruby-identifier">info</span> <span class="ruby-operator">&lt;&lt;</span> <span class="ruby-string">&quot;Cryptomnio API Version: &quot;</span> <span class="ruby-operator">+</span> <span class="ruby-ivar">@VERSION</span> <span class="ruby-operator">+</span> <span class="ruby-string">&quot;\n&quot;</span>
 
         <span class="ruby-keyword">return</span> <span class="ruby-identifier">info</span>
-<span class="ruby-keyword">end</span></pre>
-          </div>
-          
-        </div>
-
-        
-
-        
-      </div>
-
-    
-      <div id="method-i-initalize" class="method-detail ">
-        
-        <div class="method-heading">
-          <span class="method-name">initalize</span><span
-            class="method-args">()</span>
-          
-          <span class="method-click-advice">click to toggle source</span>
-          
-        </div>
-        
-
-        <div class="method-description">
-          
-          <p>Creates a new <a href="Cryptomnio.html">Cryptomnio</a> object</p>
-          
-          
-
-          
-          <div class="method-source-code" id="initalize-source">
-            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 27</span>
-<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initalize</span>
-        <span class="ruby-identifier">puts</span> <span class="ruby-string">&quot;Cryptomnio Initalized&quot;</span> <span class="ruby-keyword">if</span> <span class="ruby-constant">VERBOSITY</span> <span class="ruby-operator">&gt;=</span> <span class="ruby-value">1</span>
 <span class="ruby-keyword">end</span></pre>
           </div>
           
