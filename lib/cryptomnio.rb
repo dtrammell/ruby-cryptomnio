@@ -328,21 +328,23 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 	def put_account_order_market(
 		side,
 		quantity,
+		amount,
 		market,
 		venue      = @context[:venue].to_s,
 		accountid  = @context[:accountid],
 		venuekeyid = @context[:venuekeyid] )
 
-		uripath  = "/venues/exchanges/" + venue + "/accounts/" + accountid + "/orders"
-		errormsg = "Creation of new market order for account %s failed." % accountid
+		uripath  = '/venues/exchanges/' + venue + '/accounts/' + accountid + '/orders'
+		errormsg = 'Creation of new market order for account %s failed.' % accountid
 		body     = {
-			"venue"      => venue,
-			"venueKeyId" => venuekeyid,
-			"orderType"  => "market",
-			"side"       => side,
-			"quantity"   => quantity,
-			"market"     => market
+			'venue'      => venue,
+			'venueKeyId' => venuekeyid,
+			'orderType'  => 'market',
+			'side'       => side,
+			'market'     => market
 		}
+		body['quantity'] = quantity if quantity
+		body['amount']   = amount   if amount
 		return self._rest_call( :post, :core, uripath, nil, errormsg, body.to_json )
 	end
 
