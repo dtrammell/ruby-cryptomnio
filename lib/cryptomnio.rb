@@ -19,9 +19,9 @@ class Cryptomnio
 		# The name of the Gem's Author
 		@AUTHOR      = "Dustin D. Trammell"
 		# The publication date of the current Gem version
-		@DATE        = "2021-11-10"
+		@DATE        = "2022-11-18"
 		# The Gem version
-		@VERSION     = "0.1.1"
+		@VERSION     = "0.1.2"
 		# The Cryptomnio API Version
 		@API_VERSION = "0.23.1"
 		# API URI Path Version Slug @URI_VERSION = "/v1"
@@ -464,20 +464,21 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 	# Return an array of a venue market's ticker hashes
 	def get_market_tickers(
 		market,
-		from   = (Time.now - 120).to_i*1000, # last one minute in milliseconds
+		from   = (Time.now - 300).to_i*1000, # last five minutes in milliseconds
 		to     = nil, # to defaults to Time.now within Cryptomnio
 		cursor = nil,
 		venue  = @context[:venue].to_s)
 
 		uripath    = "/venues/" + venue + "/markets/" + market + "/ticker"
-		uriparams  = "from=%s"    % from
-		uriparams << "&to=%s"     % to     if to
+		uriparams  = "from=%d"    % from
+		uriparams << "&to=%d"     % to     if to
 		uriparams << "&cursor=%d" % cursor if cursor
 
 		retries = 0
 		pause = 4
 		begin
 			result = self._rest_call( :get, :cma, uripath, uriparams, "Retrieval of venue's market's market ticker failed." )
+			pp result if $DEBUG && $VERBOSE
 			raise "Error: Empty set of tickers received" if result['tickers'].count < 1
 			return result
 		rescue => e
@@ -499,8 +500,8 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		market,
 		venue  = @context[:venue].to_s)
 
-		# Call get_market_tickers to request a single ticker (last 20 seconds)
-		tickers = self.get_market_tickers( market, (Time.now.to_i - 20)*1000, nil, nil, venue ) 
+		# Call get_market_tickers to request a single ticker (last 30 seconds; get_market_tickers will error if no data in last 30 seconds)
+		tickers = self.get_market_tickers( market, (Time.now.to_i - 30)*1000, nil, nil, venue ) 
 		# Return the last ticker in the array (in case somehow we got back more than one)
 		count = tickers['tickers'].count
 
