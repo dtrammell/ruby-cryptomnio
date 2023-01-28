@@ -19,11 +19,11 @@ class Cryptomnio
 		# The name of the Gem's Author
 		@AUTHOR      = "Dustin D. Trammell"
 		# The publication date of the current Gem version
-		@DATE        = "2023-01-27"
+		@DATE        = "2023-01-28"
 		# The Gem version
-		@VERSION     = "0.1.3"
+		@VERSION     = "0.2.0"
 		# The Cryptomnio API Version
-		@API_VERSION = "0.23.1"
+		@API_VERSION = "0.24.0"
 		# API URI Path Version Slug @URI_VERSION = "/v1"
 		@URI_VERSION = ""
 
@@ -231,7 +231,7 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 	end
 
 	# Return an array of hashes of a venue's markets
-	def get_markets( venue )
+	def get_markets( venue: )
 		uripath = "/venues/" + venue + "/markets"
 		return self._rest_call( :get, :core, uripath, nil, "Retrieval of supported venue's markets failed." )
 	end
@@ -241,19 +241,19 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 
 	# Return a hash of a venue account
 	def get_account(
-		venue     = @context[:venue].to_s,
-		accountid = @context[:accountid] )
+		venue:     @context[:venue].to_s,
+		accountid: @context[:accountid] )
 
-		uripath   = "/venues/" + venue + "/accounts/" + accountid
-		errormsg  =  "Retrieval of venue account information for account %s failed." % accountid
+		uripath  = "/venues/" + venue + "/accounts/" + accountid
+		errormsg = "Retrieval of venue account information for account %s failed." % accountid
 		return self._rest_call( :get, :core, uripath, nil, errormsg )
 	end
 
 	# Return an array of hashes of a venue account's balances 
 	def get_account_balance(
-		venue      = @context[:venue].to_s,
-		accountid  = @context[:accountid],
-		venuekeyid = @context[:venuekeyid] )
+		venue:      @context[:venue].to_s,
+		accountid:  @context[:accountid],
+		venuekeyid: @context[:venuekeyid] )
 
 		uripath   = "/venues/exchanges/" + venue + "/accounts/" + accountid + "/balance"
 		uriparams = "venueKeyId=" + venuekeyid 
@@ -263,16 +263,16 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 
 	# Get account balance for symbol
 	def get_account_balance_symbol(
-		symbol,
-		venue      = @context[:venue].to_s,
-		accountid  = @context[:accountid],
-		venuekeyid = @context[:venuekeyid] )
+		symbol:,
+		venue:      @context[:venue].to_s,
+		accountid:  @context[:accountid],
+		venuekeyid: @context[:venuekeyid] )
 
 		symbol = symbol.downcase
 		$balance = nil
 		# TODO: Check cached balance's timestamp, if too old, update balances
 		# Retrieve all balances for account
-		@balances = self.get_account_balance( venue, accountid, venuekeyid )
+		@balances = self.get_account_balance( venue: venue, accountid: accountid, venuekeyid: venuekeyid )
 		# Find the balance for the symbol we want
 		@balances["assets"].each do |asset|
 			$balance = asset["amount"] if asset["currency"] == symbol
@@ -286,10 +286,10 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 	# Return an array of hashes of a venue account's orders
 	# Accepts optional array of orders statuses for filtering results
 	def get_account_orders(
-		status_filters = [],
-		venue          = @context[:venue].to_s,
-		accountid      = @context[:accountid],
-		venuekeyid     = @context[:venuekeyid] )
+		status_filters: [],
+		venue:          @context[:venue].to_s,
+		accountid:      @context[:accountid],
+		venuekeyid:     @context[:venuekeyid] )
 
 		uripath   = "/venues/exchanges/" + venue + "/accounts/" + accountid + "/orders"
 		uriparams = "venueKeyId=" + venuekeyid 
@@ -302,10 +302,10 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 
 	# Return an hash of a venue account's single order
 	def get_account_order(
-		orderid,
-		venue      = @context[:venue].to_s,
-		accountid  = @context[:accountid],
-		venuekeyid = @context[:venuekeyid] )
+		orderid:,
+		venue:      @context[:venue].to_s,
+		accountid:  @context[:accountid],
+		venuekeyid: @context[:venuekeyid] )
 
 		uripath   = "/venues/exchanges/" + venue + "/accounts/" + accountid + "/orders/" + orderid
 		uriparams = "venueKeyId=" + venuekeyid 
@@ -315,13 +315,13 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 
 	# Create a new market order under a venue account
 	def put_account_order_market(
-		side,
-		quantity,
-		amount,
-		market,
-		venue      = @context[:venue].to_s,
-		accountid  = @context[:accountid],
-		venuekeyid = @context[:venuekeyid] )
+		market:,
+		side:,
+		quantity:,
+		amount:,
+		venue:      @context[:venue].to_s,
+		accountid:  @context[:accountid],
+		venuekeyid: @context[:venuekeyid] )
 
 		uripath  = '/venues/exchanges/' + venue + '/accounts/' + accountid + '/orders'
 		errormsg = 'Creation of new market order for account %s failed.' % accountid
@@ -339,13 +339,13 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 
 	# Create a new limit order under a venue account
 	def put_account_order_limit( 
-		side,
-		quantity,
-		price,
-		market,
-		venue      = @context[:venue].to_s,
-		accountid  = @context[:accountid],
-		venuekeyid = @context[:venuekeyid] )
+		market:,
+		side:,
+		quantity:,
+		price:,
+		venue:      @context[:venue].to_s,
+		accountid:  @context[:accountid],
+		venuekeyid: @context[:venuekeyid] )
 
 		uripath  = "/venues/exchanges/" + venue + "/accounts/" + accountid + "/orders"
 		errormsg = "Creation of new limit order for account %s failed." % accountid
@@ -363,10 +363,10 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 
 	# Delete (cancel) a venue account's open order
 	def del_account_order(
-		orderid,
-		venue      = @context[:venue].to_s,
-		accountid  = @context[:accountid],
-		venuekeyid = @context[:venuekeyid] )
+		orderid:,
+		venue:      @context[:venue].to_s,
+		accountid:  @context[:accountid],
+		venuekeyid: @context[:venuekeyid] )
 
 		uripath   = "/venues/exchanges/" + venue + "/accounts/" + accountid + "/orders/" + orderid
 		uriparams = "venueKeyId=" + venuekeyid 
@@ -376,9 +376,9 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 
 	# Return an array of hashes of a venue account's trades
 	def get_account_trades(
-		venue      = @context[:venue].to_s,
-		accountid  = @context[:accountid],
-		venuekeyid = @context[:venuekeyid] )
+		venue:      @context[:venue].to_s,
+		accountid:  @context[:accountid],
+		venuekeyid: @context[:venuekeyid] )
 
 		uripath   = "/venues/exchanges/" + venue + "/accounts/" + accountid + "/trades"
 		uriparams = "venueKeyId=" + venuekeyid 
@@ -388,10 +388,10 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 
 	# Return a hash of a venue account's trade
 	def get_account_trade(
-		tradeid,
-		venue      = @context[:venue].to_s,
-		accountid  = @context[:accountid],
-		venuekeyid = @context[:venuekeyid] )
+		tradeid:,
+		venue:      @context[:venue].to_s,
+		accountid:  @context[:accountid],
+		venuekeyid: @context[:venuekeyid] )
 
 		uripath   = "/venues/exchanges/" + venue + "/accounts/" + accountid + "/trades/" + tradeid
 		uriparams = "venueKeyId=" + venuekeyid 
@@ -404,10 +404,10 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 
 	# Return a hash of a venue market's order book
 	def get_market_orderbook(
-		market,
-		side  = nil,
-		limit = nil,
-		venue = @context[:venue].to_s)
+		market:,
+		side:  nil,
+		limit: nil,
+		venue: @context[:venue].to_s)
 
 		uripath   = "/venues/" + venue + "/markets/" + market + "/orderbook"
 		uriparams = ""
@@ -420,10 +420,10 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 
 	# Return a hash of a venue market's order book's price at a specified volume
 	def get_market_orderbook_depth_price(
-		market,
-		side   = nil,
-		volume = nil,
-		venue  = @context[:venue].to_s)
+		market:,
+		side:   nil,
+		volume: nil,
+		venue:  @context[:venue].to_s)
 
 		uripath   = "/venues/" + venue + "/markets/" + market + "/orderbook/depth/price"
 		uriparams = ""
@@ -436,10 +436,10 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 
 	# Return a hash of a venue market's order book's volume at a specified price
 	def get_market_orderbook_depth_volume(
-		market,
-		side  = nil,
-		price = nil,
-		venue = @context[:venue].to_s)
+		market:,
+		side:  nil,
+		price: nil,
+		venue: @context[:venue].to_s)
 
 		uripath   = "/venues/" + venue + "/markets/" + market + "/orderbook/depth/volume"
 		uriparams = ""
@@ -452,11 +452,11 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 
 	# Return an array of a venue market's ticker hashes
 	def get_market_tickers(
-		market,
-		from   = (Time.now.to_i - 300) * 1000, # default to last 5 minutes
-		to     = nil, # to defaults to Time.now within Cryptomnio
-		cursor = nil,
-		venue  = @context[:venue].to_s)
+		market:,
+		from:   (Time.now.to_i - 300) * 1000, # default to last 5 minutes
+		to:     nil, # to defaults to Time.now within Cryptomnio
+		cursor: nil,
+		venue:  @context[:venue].to_s)
 
 		uripath    = "/venues/" + venue + "/markets/" + market + "/ticker"
 		uriparams  = "from=%d"    % from   if from
@@ -487,13 +487,13 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 
 	# Return a venue market's most current ticker hash
 	def get_market_ticker(
-		market,
-		venue  = @context[:venue].to_s)
+		market:,
+		venue:  @context[:venue].to_s)
 
 		# Call get_market_tickers to request most recent ticker 
 		#TODO: Replace with this call once Cryptomnio accepts calls without a from parameter (don't need a set of tickers, just most recent)
-		#tickers = self.get_market_tickers( market, nil, nil, nil, venue ) 
-		tickers = self.get_market_tickers( market, (Time.now.to_i - 30) * 1000, nil, nil, venue ) 
+		#tickers = self.get_market_tickers( market: market, venue: venue ) 
+		tickers = self.get_market_tickers( market: market, from: (Time.now.to_i - 30) * 1000, venue: venue ) 
 
 		# Check timestamp on ticker and ensure it's not too old
 		too_old = (Time.now.to_i - 120) * 1000 # over 2 minutes ago
@@ -507,9 +507,9 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 
 	# Return a venue market's recent trades array
 	def get_market_trades(
-		market,
-		limit = nil,
-		venue = @context[:venue].to_s )
+		market:,
+		limit: nil,
+		venue: @context[:venue].to_s )
 
 		uripath   = "/venues/"  + venue + "/markets/" + market + "/trades"
 		uriparams = "&limit=%s" % limit if limit
@@ -545,12 +545,12 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 
 	# Return an array of period data
 	def get_market_periods(
-		market,
-		periodlength,
-		periodcount   = nil, # periodCount defaults to 10 within Cryptomnio
-		to            = nil, # to defaults to Time.now within Cryptomnio
-		limit         = nil,
-		venue         = @context[:venue].to_s)
+		market:,
+		periodlength:,
+		periodcount:   nil, # periodCount defaults to 10 within Cryptomnio
+		to:            nil, # to defaults to Time.now within Cryptomnio
+		limit:         nil,
+		venue:         @context[:venue].to_s)
 
 		uripath    = "/venues/" + venue + "/markets/" + market + "/periods"
 		uriparams  = "periodLength=%s" % periodlength
@@ -590,12 +590,12 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 
 	# Return a momentum value for a defined period of time
 	def get_market_momentum(
-		market,
-		type,
-		periodlength,
-		periodcount   = nil, # periodCount defaults to 10 within Cryptomnio
-		to            = nil, # to defaults to Time.now within Cryptomnio
-		venue         = @context[:venue].to_s)
+		market:,
+		type:,
+		periodlength:,
+		periodcount: nil, # periodCount defaults to 10 within Cryptomnio
+		to:          nil, # to defaults to Time.now within Cryptomnio
+		venue:       @context[:venue].to_s)
 
 		uripath    = "/venues/" + venue + "/markets/" + market + "/momentum"
 		uriparams  = "type=%s"          % type
@@ -630,13 +630,13 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 
 	# Return an exponential moving average value for a defined period of time
 	def get_market_ema(
-		market,
-		type,
-		periodlength,
-		periodcalc,
-		periodcount   = nil, # periodCount defaults to 10 within Cryptomnio
-		to            = nil, # to defaults to Time.now within Cryptomnio
-		venue         = @context[:venue].to_s)
+		market:,
+		type:,
+		periodlength:,
+		periodcalc:,
+		periodcount: nil, # periodCount defaults to 10 within Cryptomnio
+		to:          nil, # to defaults to Time.now within Cryptomnio
+		venue:       @context[:venue].to_s)
 
 		uripath    = "/venues/" + venue + "/markets/" + market + "/averages/ema"
 		uriparams  = "type=%s"          % type
