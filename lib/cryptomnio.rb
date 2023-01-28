@@ -19,9 +19,9 @@ class Cryptomnio
 		# The name of the Gem's Author
 		@AUTHOR      = "Dustin D. Trammell"
 		# The publication date of the current Gem version
-		@DATE        = "2022-11-18"
+		@DATE        = "2023-01-27"
 		# The Gem version
-		@VERSION     = "0.1.2"
+		@VERSION     = "0.1.3"
 		# The Cryptomnio API Version
 		@API_VERSION = "0.23.1"
 		# API URI Path Version Slug @URI_VERSION = "/v1"
@@ -193,7 +193,7 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 				) do
 				|response, request, result, &block|
 
-				# Verbose output
+				# Debug output
 				if $DEBUG
 					puts "Request:      %s: %s" % [ request.method.upcase, request.uri ]
 					puts "Headers:      %s"     % [ request.headers ]
@@ -205,19 +205,8 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 				self._check_errors( response, error_string )
 
 				# Success: Convert JSON to Ruby object and return it
-				# TODO: remove this workaround that handles the two APIs differently once they are consistent
-				case api
-					when :core
-						responsebody = JSON.parse(response)['body']
-						#pp responsebody if $DEBUG
-						return responsebody 
-					when :cma
-						responsebody = JSON.parse(response)['body']
-						#pp responsebody if $DEBUG
-						return responsebody 
-					else
-						raise "Unknown API (%s) referenced" % api
-				end
+				responsebody = JSON.parse(response)['body']
+				return responsebody
 			end
 		rescue => e
 			# Rescue any exceptions thrown by _check_errors
@@ -464,13 +453,13 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 	# Return an array of a venue market's ticker hashes
 	def get_market_tickers(
 		market,
-		from   = (Time.now - 300).to_i*1000, # last five minutes in milliseconds
+		from   = (Time.now.to_i - 300) * 1000, # default to last 5 minutes
 		to     = nil, # to defaults to Time.now within Cryptomnio
 		cursor = nil,
 		venue  = @context[:venue].to_s)
 
 		uripath    = "/venues/" + venue + "/markets/" + market + "/ticker"
-		uriparams  = "from=%d"    % from
+		uriparams  = "from=%d"    % from   if from
 		uriparams << "&to=%d"     % to     if to
 		uriparams << "&cursor=%d" % cursor if cursor
 
@@ -478,9 +467,10 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		pause = 4
 		begin
 			result = self._rest_call( :get, :cma, uripath, uriparams, "Retrieval of venue's market's market ticker failed." )
-			pp result if $DEBUG && $VERBOSE
-			raise "Error: Empty set of tickers received" if result['tickers'].count < 1
-			return result
+			pp result if $DEBUG
+			raise "Error: Empty response received" if result == nil
+			raise "Error: No latest ticker value" if result['latest'] == nil
+			return result.dup
 		rescue => e
 			case
 				when retries <= 3
@@ -489,7 +479,7 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 					pause = pause * 2
 					retry
 				else
-					raise "Error: Received empty set of tickers for 3 retries: %s" % e.message
+					raise "Error: Continued error for 3 retries: %s" % e.message
 					return false
 			end	
 		end
@@ -500,16 +490,19 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		market,
 		venue  = @context[:venue].to_s)
 
-		# Call get_market_tickers to request a single ticker (last 30 seconds; get_market_tickers will error if no data in last 30 seconds)
-		tickers = self.get_market_tickers( market, (Time.now.to_i - 30)*1000, nil, nil, venue ) 
-		# Return the last ticker in the array (in case somehow we got back more than one)
-		count = tickers['tickers'].count
+		# Call get_market_tickers to request most recent ticker 
+		#TODO: Replace with this call once Cryptomnio accepts calls without a from parameter (don't need a set of tickers, just most recent)
+		#tickers = self.get_market_tickers( market, nil, nil, nil, venue ) 
+		tickers = self.get_market_tickers( market, (Time.now.to_i - 30) * 1000, nil, nil, venue ) 
+
+		# Check timestamp on ticker and ensure it's not too old
+		too_old = (Time.now.to_i - 120) * 1000 # over 2 minutes ago
+		raise "ERROR: Most recent ticker is too old! (%s is over 2 minutes ago)" % [ Time.new(tickers['latest']['timestamp'] / 1000) ] if tickers['latest']['timestamp'] < too_old
 
 		# Output
-		puts "Ticker: %s" % tickers['tickers'][count - 1] if $DEBUG
+		puts "Ticker: %s" % tickers['latest']['price'] if $VERBOSE
 
-		# Return the most recent ticker from the array
-		return tickers['tickers'][count - 1]
+		return tickers['latest'].dup
 	end
 
 	# Return a venue market's recent trades array
