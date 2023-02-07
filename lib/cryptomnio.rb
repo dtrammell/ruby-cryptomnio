@@ -42,6 +42,7 @@ end
 
 # HTTP Request Logging module for HTTPClient decoration
 module LogHTTPRequest
+	# Gets the specified URL
 	def get(url)
 		puts "Sending Request for #{url}"
 		super
@@ -421,14 +422,16 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 	# Return a hash of a venue market's order book's price at a specified volume
 	def get_market_orderbook_depth_price(
 		market:,
-		side:   nil,
-		volume: nil,
+		side:       nil,
+		volume:     nil,
+		cumulative: nil,
 		venue:  @context[:venue].to_s)
 
 		uripath   = "/venues/" + venue + "/markets/" + market + "/orderbook/depth/price"
 		uriparams = ""
 		uriparams << "&side=%s"  % side  if side
 		uriparams << "&volume=%d" % volume if volume
+		uriparams << "&cumulative=%s" % cumulative.to_s if ! cumulative.nil?
 		uriparams = nil if uriparams.length == 0
 
 		return self._rest_call( :get, :cma, uripath, uriparams, "Retrieval of venue market's order book price at given volume (#{volume}) failed." )
@@ -437,14 +440,16 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 	# Return a hash of a venue market's order book's volume at a specified price
 	def get_market_orderbook_depth_volume(
 		market:,
-		side:  nil,
-		price: nil,
+		side:       nil,
+		price:      nil,
+		cumulative: nil,
 		venue: @context[:venue].to_s)
 
 		uripath   = "/venues/" + venue + "/markets/" + market + "/orderbook/depth/volume"
 		uriparams = ""
 		uriparams << "&side=%s"  % side  if side
 		uriparams << "&price=%f" % price if price
+		uriparams << "&cumulative=%s" % cumulative.to_s if ! cumulative.nil?
 		uriparams = nil if uriparams.length == 0
 
 		return self._rest_call( :get, :cma, uripath, uriparams, "Retrieval of venue market's order book volume at given price (#{price}) failed." )
