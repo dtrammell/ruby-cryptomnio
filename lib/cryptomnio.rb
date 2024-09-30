@@ -199,6 +199,7 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 					puts "Request:      %s: %s" % [ request.method.upcase, request.uri ]
 					puts "Headers:      %s"     % [ request.headers ]
 					puts "POST payload: %s"     % [ body ] if body
+					puts "Timestamp:    %s"     % [ Time.now.strftime('%Y-%m-%d %H:%M:%S %z') ]
 					puts "Response:     %d: %s" % [ response.code, response ]
 				end
 
