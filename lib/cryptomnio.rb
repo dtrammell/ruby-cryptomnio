@@ -431,7 +431,7 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		uripath   = "/venues/" + venue + "/markets/" + market + "/orderbook/depth/price"
 		uriparams = ""
 		uriparams << "&side=%s"  % side  if side
-		uriparams << "&volume=%d" % volume if volume
+		uriparams << "&volume=%f" % volume if volume
 		uriparams << "&cumulative=%s" % cumulative.to_s if ! cumulative.nil?
 		uriparams = nil if uriparams.length == 0
 
