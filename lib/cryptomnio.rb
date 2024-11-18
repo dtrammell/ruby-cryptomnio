@@ -285,6 +285,28 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		return $balance.to_f
 	end
 
+	# Get account balance for symbol
+	def get_account_available_balance_symbol(
+		symbol:,
+		venue:      @context[:venue].to_s,
+		accountid:  @context[:accountid],
+		venuekeyid: @context[:venuekeyid] )
+
+		symbol = symbol.downcase
+		$balance = nil
+		# TODO: Check cached balance's timestamp, if too old, update balances
+		# Retrieve all balances for account
+		@balances = self.get_account_balance( venue: venue, accountid: accountid, venuekeyid: venuekeyid )
+		# Find the balance for the symbol we want
+		@balances["assets"].each do |asset|
+			$balance = asset["available"] if asset["currency"] == symbol
+		end
+		# Raise an exception if the requested symbol is not found
+		raise "No balance returned for currency symbol \"%s\"" % symbol if ! $balance
+		# Return balance for requested symbol as a floating-point integer
+		return $balance.to_f
+	end
+
 	# Return an array of hashes of a venue account's orders
 	# Accepts optional array of orders statuses for filtering results
 	def get_account_orders(
