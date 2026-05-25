@@ -11,6 +11,7 @@ Gem::Specification.new do |s|
 	s.files       = ["lib/cryptomnio.rb"]
 	s.homepage    = "https://cryptomnio.com/dev/lib/ruby"
 	s.license     = "MIT"
+	s.required_ruby_version = ">= 3.3"
 #	s.add_runtime_dependency "daemons",
 #		[">= 0.0.1"]
 #	s.add_development_dependency "bourne",
