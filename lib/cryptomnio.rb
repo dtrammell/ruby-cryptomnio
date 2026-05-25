@@ -51,7 +51,7 @@ end
 
 # HTTPClient Class Wrapper
 class HTTPClient
-	def initalize(client = RestClient)
+	def initialize(client = RestClient)
 		@client = client
 	end
 
@@ -73,8 +73,8 @@ class Cryptomnio::REST < Cryptomnio
 	# If "http_proxy" is set in the program's environment, it will be used for
 	# the RestClient's proxy setting.
 
-	def initalize
-		# Call Superlcass initialize
+	def initialize
+		# Call Superclass initialize
 		super
 
 		# Get the HTTP proxy from the environment (if there is one)
