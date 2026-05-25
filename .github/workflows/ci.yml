@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  test:
+    name: Test Ruby ${{ matrix.ruby-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        ruby-version: [ '3.3', '3.4', '4.0' ]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Ruby ${{ matrix.ruby-version }}
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: ${{ matrix.ruby-version }}
+        bundler-cache: false
+
+    - name: Syntax check
+      run: ruby -c lib/cryptomnio.rb
+
+    - name: Install rest-client
+      run: gem install rest-client
+
+    - name: Build gem
+      run: gem build cryptomnio.gemspec
