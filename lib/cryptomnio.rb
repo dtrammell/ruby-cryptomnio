@@ -1,4 +1,5 @@
 require 'rest-client'
+require 'openssl'
 require 'base64'
 require 'json'
 
@@ -434,10 +435,10 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		venue: @context[:venue].to_s)
 
 		uripath   = "/venues/" + venue + "/markets/" + market + "/orderbook"
-		uriparams = ""
-		uriparams << "&side=%s"  % side  if side
-		uriparams << "&limit=%d" % limit if limit
-		uriparams = nil if uriparams.length == 0
+		parts = []
+		parts << "side=%s"  % side  if side
+		parts << "limit=%d" % limit if limit
+		uriparams = parts.empty? ? nil : parts.join("&")
 
 		return self._rest_call( :get, :cma, uripath, uriparams, "Retrieval of venue market's order book failed." )
 	end
@@ -451,11 +452,11 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		venue:  @context[:venue].to_s)
 
 		uripath   = "/venues/" + venue + "/markets/" + market + "/orderbook/depth/price"
-		uriparams = ""
-		uriparams << "&side=%s"  % side  if side
-		uriparams << "&volume=%f" % volume if volume
-		uriparams << "&cumulative=%s" % cumulative.to_s if ! cumulative.nil?
-		uriparams = nil if uriparams.length == 0
+		parts = []
+		parts << "side=%s"        % side             if side
+		parts << "volume=%f"      % volume           if volume
+		parts << "cumulative=%s" % cumulative.to_s if !cumulative.nil?
+		uriparams = parts.empty? ? nil : parts.join("&")
 
 		return self._rest_call( :get, :cma, uripath, uriparams, "Retrieval of venue market's order book price at given volume (#{volume}) failed." )
 	end
@@ -469,11 +470,11 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		venue: @context[:venue].to_s)
 
 		uripath   = "/venues/" + venue + "/markets/" + market + "/orderbook/depth/volume"
-		uriparams = ""
-		uriparams << "&side=%s"  % side  if side
-		uriparams << "&price=%f" % price if price
-		uriparams << "&cumulative=%s" % cumulative.to_s if ! cumulative.nil?
-		uriparams = nil if uriparams.length == 0
+		parts = []
+		parts << "side=%s"        % side             if side
+		parts << "price=%f"       % price            if price
+		parts << "cumulative=%s" % cumulative.to_s if !cumulative.nil?
+		uriparams = parts.empty? ? nil : parts.join("&")
 
 		return self._rest_call( :get, :cma, uripath, uriparams, "Retrieval of venue market's order book volume at given price (#{price}) failed." )
 	end
@@ -540,7 +541,7 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		venue: @context[:venue].to_s )
 
 		uripath   = "/venues/"  + venue + "/markets/" + market + "/trades"
-		uriparams = "&limit=%s" % limit if limit
+		uriparams = limit ? "limit=%s" % limit : nil
 
 		retries = 0
 		begin
