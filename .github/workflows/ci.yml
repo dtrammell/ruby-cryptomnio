@@ -31,3 +31,9 @@ jobs:
 
     - name: Build gem
       run: gem build cryptomnio.gemspec
+
+    - name: Install minitest
+      run: gem install minitest
+
+    - name: Run tests
+      run: rake test

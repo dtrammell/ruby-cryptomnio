@@ -6,7 +6,7 @@
 # Issue #7: Missing explicit require 'openssl'
 # Issue #8: Missing rest-client runtime dependency in gemspec
 #
-# Run with: ruby tests/test_issues_6_7_8.rb
+# Run with: rake test  (or: ruby test/test_issues_6_7_8.rb)
 # Requires: gem install minitest rest-client
 
 require 'minitest/autorun'
