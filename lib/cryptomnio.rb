@@ -22,7 +22,7 @@ class Cryptomnio
 		# The publication date of the current Gem version
 		@DATE        = "2023-01-28"
 		# The Gem version
-		@VERSION     = "0.2.0"
+		@VERSION     = "0.2.1"
 		# The Cryptomnio API Version
 		@API_VERSION = "0.24.0"
 		# API URI Path Version Slug @URI_VERSION = "/v1"
@@ -186,14 +186,18 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		headers["Content-type"] = "application/json" if body
 
 		# Call RestClient based on the method against URI with authentication headers "Access-Key" and "Sign"
+		retries ||= 0
+		response = nil
 		begin
+
 			RestClient::Request.execute(
 				method:  method,
 				url:     uri,
 				headers: headers,
 				payload: body
 				) do
-				|response, request, result, &block|
+				|inner_response, request, result, &block|
+				response = inner_response
 
 				# Debug output
 				if $DEBUG
@@ -214,7 +218,12 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		rescue => e
 			# Rescue any exceptions thrown by _check_errors
 
-			# TODO: Retry 3 times with pauses if temporary error
+			# Retry 3 times with pauses if temporary error
+puts "Retries: #{retries} | response.code: #{response.code}"
+			if response.code == 502 and retries += 1 < 3 
+				sleep 30
+				retry
+			end
 			
 			# Output
 			puts e.inspect if $DEBUG
@@ -383,6 +392,32 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 			"price"      => price,
 			"market"     => market
 		}
+		return self._rest_call( :post, :core, uripath, nil, errormsg, body.to_json )
+	end
+
+	# Create a new stop loss order under a venue account
+	def put_account_order_stop( 
+		market:,
+		side:,
+		quantity:,
+		triggerprice:,
+		amount:,
+		venue:      @context[:venue].to_s,
+		accountid:  @context[:accountid],
+		venuekeyid: @context[:venuekeyid] )
+
+		uripath  = "/venues/exchanges/" + venue + "/accounts/" + accountid + "/orders"
+		errormsg = "Creation of new limit order for account %s failed." % accountid
+		body     = {
+			"venue"        => venue,
+			"venueKeyId"   => venuekeyid,
+			"orderType"    => "stop",
+			"side"         => side,
+			"triggerPrice" => triggerprice,
+			"market"       => market
+		}
+		body['quantity'] = quantity if quantity
+		body['amount']   = amount   if amount
 		return self._rest_call( :post, :core, uripath, nil, errormsg, body.to_json )
 	end
 
@@ -758,10 +793,15 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 	# Error-handling method
 	def _check_errors( response, thisfailure )
 		case
+		when response.code == 200
+			# Success!
+			return true
 		when response.code == 400
+			# Bad Request
 			raise "Error: [%d]: %s" % [ response.code, response ] 
 			return false
 		when response.code == 401
+			# Unauthorized
 			case @config[:authtype] 
 			when "Basic"
 				raise "Cryptomnio Basic Authentication for user %s failed: [%d]: %s" % [ @config[:username], response.code, response ]
@@ -774,22 +814,24 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 				return false
 			end
 		when response.code == 404
+			# Not Found
 			raise "Error: Missing Resource"
 			return false
 		when response.code == 502
 			# Bad Gateway
 			raise "Error: %s: [%d]: %s" % [ thisfailure, response.code, response ]
+		when response.code == 503
+			# Service Unavailable
+			raise "Temporary Error: %s: [%d]: %s" % [ thisfailure, response.code, response ] 
+			return false
 		when response.code == 504
 			# Gateway Timeout (temporary error)
 			raise "Temporary Error: %s: [%d]: %s" % [ thisfailure, response.code, response ] 
 			return false
-		when response.code != 200
-			# Catch-all: Anything other than success
+		else
+			# Catch-all: Anything other than the above
 			raise "Error: %s: [%d]: %s" % [ thisfailure, response.code, response ] 
 			return false
-		else
-			# 200 Success!
-			return true
 		end
 	end
 
