@@ -127,6 +127,8 @@
     
     <li ><a href="#method-i-put_account_order_market">#put_account_order_market</a>
     
+    <li ><a href="#method-i-put_account_order_stop">#put_account_order_stop</a>
+    
   </ul>
 </div>
 
@@ -210,7 +212,7 @@ Class and contains REST Client-specific methods and variables.</p>
 
           
           <div class="method-source-code" id="new-source">
-            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 709</span>
+            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 743</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">initialize</span>
         <span class="ruby-keyword">yield</span> <span class="ruby-keyword">self</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">block_given?</span>
         <span class="ruby-keyword">super</span>
@@ -292,7 +294,7 @@ Class and contains REST Client-specific methods and variables.</p>
 
           
           <div class="method-source-code" id="_check_errors-source">
-            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 758</span>
+            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 792</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">_check_errors</span>( <span class="ruby-identifier">response</span>, <span class="ruby-identifier">thisfailure</span> )
         <span class="ruby-keyword">case</span>
         <span class="ruby-keyword">when</span> <span class="ruby-identifier">response</span>.<span class="ruby-identifier">code</span> <span class="ruby-operator">==</span> <span class="ruby-value">400</span>
@@ -388,6 +390,8 @@ authentication headers and error handling</p>
 
         <span class="ruby-comment"># Call RestClient based on the method against URI with authentication headers &quot;Access-Key&quot; and &quot;Sign&quot;</span>
         <span class="ruby-keyword">begin</span>
+                <span class="ruby-identifier">retries</span> <span class="ruby-operator">||=</span> <span class="ruby-value">0</span>
+
                 <span class="ruby-constant">RestClient</span><span class="ruby-operator">::</span><span class="ruby-constant">Request</span>.<span class="ruby-identifier">execute</span>(
                         <span class="ruby-value">method:</span>  <span class="ruby-identifier">method</span>,
                         <span class="ruby-value">url:</span>     <span class="ruby-identifier">uri</span>,
@@ -416,6 +420,10 @@ authentication headers and error handling</p>
                 <span class="ruby-comment"># Rescue any exceptions thrown by _check_errors</span>
 
                 <span class="ruby-comment"># TODO: Retry 3 times with pauses if temporary error</span>
+                <span class="ruby-keyword">if</span> <span class="ruby-identifier">retries</span> <span class="ruby-operator">+=</span> <span class="ruby-value">1</span> <span class="ruby-operator">&lt;</span> <span class="ruby-value">3</span> <span class="ruby-keyword">and</span> <span class="ruby-identifier">response</span>.<span class="ruby-identifier">code</span> <span class="ruby-operator">==</span> <span class="ruby-value">502</span>
+                        <span class="ruby-identifier">sleep</span> <span class="ruby-value">30</span>
+                        <span class="ruby-keyword">retry</span>
+                <span class="ruby-keyword">end</span>
                 
                 <span class="ruby-comment"># Output</span>
                 <span class="ruby-identifier">puts</span> <span class="ruby-identifier">e</span>.<span class="ruby-identifier">inspect</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">$DEBUG</span>
@@ -605,7 +613,7 @@ Authentication</p>
 
           
           <div class="method-source-code" id="del_account_order-source">
-            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 389</span>
+            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 423</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">del_account_order</span>(
         <span class="ruby-value">orderid:</span>,
         <span class="ruby-value">venue:</span>      <span class="ruby-ivar">@context</span>[<span class="ruby-value">:venue</span>].<span class="ruby-identifier">to_s</span>,
@@ -646,7 +654,7 @@ Authentication</p>
 
           
           <div class="method-source-code" id="get_account-source">
-            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 245</span>
+            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 251</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">get_account</span>(
         <span class="ruby-value">venue:</span>     <span class="ruby-ivar">@context</span>[<span class="ruby-value">:venue</span>].<span class="ruby-identifier">to_s</span>,
         <span class="ruby-value">accountid:</span> <span class="ruby-ivar">@context</span>[<span class="ruby-value">:accountid</span>] )
@@ -684,7 +692,7 @@ Authentication</p>
 
           
           <div class="method-source-code" id="get_account_available_balance_symbol-source">
-            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 289</span>
+            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 295</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">get_account_available_balance_symbol</span>(
         <span class="ruby-value">symbol:</span>,
         <span class="ruby-value">venue:</span>      <span class="ruby-ivar">@context</span>[<span class="ruby-value">:venue</span>].<span class="ruby-identifier">to_s</span>,
@@ -734,7 +742,7 @@ Authentication</p>
 
           
           <div class="method-source-code" id="get_account_balance-source">
-            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 255</span>
+            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 261</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">get_account_balance</span>(
         <span class="ruby-value">venue:</span>      <span class="ruby-ivar">@context</span>[<span class="ruby-value">:venue</span>].<span class="ruby-identifier">to_s</span>,
         <span class="ruby-value">accountid:</span>  <span class="ruby-ivar">@context</span>[<span class="ruby-value">:accountid</span>],
@@ -774,7 +782,7 @@ Authentication</p>
 
           
           <div class="method-source-code" id="get_account_balance_symbol-source">
-            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 267</span>
+            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 273</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">get_account_balance_symbol</span>(
         <span class="ruby-value">symbol:</span>,
         <span class="ruby-value">venue:</span>      <span class="ruby-ivar">@context</span>[<span class="ruby-value">:venue</span>].<span class="ruby-identifier">to_s</span>,
@@ -824,7 +832,7 @@ Authentication</p>
 
           
           <div class="method-source-code" id="get_account_order-source">
-            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 328</span>
+            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 334</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">get_account_order</span>(
         <span class="ruby-value">orderid:</span>,
         <span class="ruby-value">venue:</span>      <span class="ruby-ivar">@context</span>[<span class="ruby-value">:venue</span>].<span class="ruby-identifier">to_s</span>,
@@ -866,7 +874,7 @@ array of orders statuses for filtering results</p>
 
           
           <div class="method-source-code" id="get_account_orders-source">
-            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 312</span>
+            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 318</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">get_account_orders</span>(
         <span class="ruby-value">status_filters:</span> [],
         <span class="ruby-value">venue:</span>          <span class="ruby-ivar">@context</span>[<span class="ruby-value">:venue</span>].<span class="ruby-identifier">to_s</span>,
@@ -910,7 +918,7 @@ array of orders statuses for filtering results</p>
 
           
           <div class="method-source-code" id="get_account_trade-source">
-            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 414</span>
+            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 448</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">get_account_trade</span>(
         <span class="ruby-value">tradeid:</span>,
         <span class="ruby-value">venue:</span>      <span class="ruby-ivar">@context</span>[<span class="ruby-value">:venue</span>].<span class="ruby-identifier">to_s</span>,
@@ -951,7 +959,7 @@ array of orders statuses for filtering results</p>
 
           
           <div class="method-source-code" id="get_account_trades-source">
-            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 402</span>
+            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 436</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">get_account_trades</span>(
         <span class="ruby-value">venue:</span>      <span class="ruby-ivar">@context</span>[<span class="ruby-value">:venue</span>].<span class="ruby-identifier">to_s</span>,
         <span class="ruby-value">accountid:</span>  <span class="ruby-ivar">@context</span>[<span class="ruby-value">:accountid</span>],
@@ -991,7 +999,7 @@ array of orders statuses for filtering results</p>
 
           
           <div class="method-source-code" id="get_market_ema-source">
-            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 660</span>
+            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 694</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">get_market_ema</span>(
         <span class="ruby-value">market:</span>,
         <span class="ruby-value">type:</span>,
@@ -1065,7 +1073,7 @@ array of orders statuses for filtering results</p>
 
           
           <div class="method-source-code" id="get_market_momentum-source">
-            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 620</span>
+            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 654</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">get_market_momentum</span>(
         <span class="ruby-value">market:</span>,
         <span class="ruby-value">type:</span>,
@@ -1133,7 +1141,7 @@ array of orders statuses for filtering results</p>
 
           
           <div class="method-source-code" id="get_market_orderbook-source">
-            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 430</span>
+            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 464</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">get_market_orderbook</span>(
         <span class="ruby-value">market:</span>,
         <span class="ruby-value">side:</span>  <span class="ruby-keyword">nil</span>,
@@ -1178,7 +1186,7 @@ volume</p>
 
           
           <div class="method-source-code" id="get_market_orderbook_depth_price-source">
-            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 446</span>
+            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 480</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">get_market_orderbook_depth_price</span>(
         <span class="ruby-value">market:</span>,
         <span class="ruby-value">side:</span>       <span class="ruby-keyword">nil</span>,
@@ -1225,7 +1233,7 @@ specified price</p>
 
           
           <div class="method-source-code" id="get_market_orderbook_depth_volume-source">
-            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 464</span>
+            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 498</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">get_market_orderbook_depth_volume</span>(
         <span class="ruby-value">market:</span>,
         <span class="ruby-value">side:</span>       <span class="ruby-keyword">nil</span>,
@@ -1271,7 +1279,7 @@ specified price</p>
 
           
           <div class="method-source-code" id="get_market_periods-source">
-            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 575</span>
+            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 609</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">get_market_periods</span>(
         <span class="ruby-value">market:</span>,
         <span class="ruby-value">periodlength:</span>,
@@ -1344,7 +1352,7 @@ specified price</p>
 
           
           <div class="method-source-code" id="get_market_ticker-source">
-            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 517</span>
+            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 551</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">get_market_ticker</span>(
         <span class="ruby-value">market:</span>,
         <span class="ruby-value">venue:</span>  <span class="ruby-ivar">@context</span>[<span class="ruby-value">:venue</span>].<span class="ruby-identifier">to_s</span>)
@@ -1392,7 +1400,7 @@ specified price</p>
 
           
           <div class="method-source-code" id="get_market_tickers-source">
-            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 482</span>
+            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 516</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">get_market_tickers</span>(
         <span class="ruby-value">market:</span>,
         <span class="ruby-value">from:</span>   (<span class="ruby-constant">Time</span>.<span class="ruby-identifier">now</span>.<span class="ruby-identifier">to_i</span> <span class="ruby-operator">-</span> <span class="ruby-value">300</span>) <span class="ruby-operator">*</span> <span class="ruby-value">1000</span>, <span class="ruby-comment"># default to last 5 minutes</span>
@@ -1455,7 +1463,7 @@ specified price</p>
 
           
           <div class="method-source-code" id="get_market_trades-source">
-            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 537</span>
+            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 571</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">get_market_trades</span>(
         <span class="ruby-value">market:</span>,
         <span class="ruby-value">limit:</span> <span class="ruby-keyword">nil</span>,
@@ -1521,7 +1529,7 @@ specified price</p>
 
           
           <div class="method-source-code" id="get_markets-source">
-            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 236</span>
+            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 242</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">get_markets</span>( <span class="ruby-value">venue:</span> )
         <span class="ruby-identifier">uripath</span> = <span class="ruby-string">&quot;/venues/&quot;</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">venue</span> <span class="ruby-operator">+</span> <span class="ruby-string">&quot;/markets&quot;</span>
         <span class="ruby-keyword">return</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier">_rest_call</span>( <span class="ruby-value">:get</span>, <span class="ruby-value">:core</span>, <span class="ruby-identifier">uripath</span>, <span class="ruby-keyword">nil</span>, <span class="ruby-string">&quot;Retrieval of supported venue&#39;s markets failed.&quot;</span> )
@@ -1555,7 +1563,7 @@ specified price</p>
 
           
           <div class="method-source-code" id="get_venues-source">
-            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 231</span>
+            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 237</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">get_venues</span>
         <span class="ruby-keyword">return</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier">_rest_call</span>( <span class="ruby-value">:get</span>, <span class="ruby-value">:core</span>, <span class="ruby-string">&quot;/venues&quot;</span>, <span class="ruby-keyword">nil</span>, <span class="ruby-string">&quot;Retrieval of supported venues failed.&quot;</span> )
 <span class="ruby-keyword">end</span></pre>
@@ -1573,7 +1581,7 @@ specified price</p>
         
         <div class="method-heading">
           <span class="method-name">put_account_order_limit</span><span
-            class="method-args">( market:, side:, quantity:, price:, venue: @context[:venue].to_s, accountid: @context[:accountid], venuekeyid: @context[:venuekeyid] )</span>
+            class="method-args">( market:, side:, quantity:, amount:, price:, venue: @context[:venue].to_s, accountid: @context[:accountid], venuekeyid: @context[:venuekeyid] )</span>
           
           <span class="method-click-advice">click to toggle source</span>
           
@@ -1588,11 +1596,12 @@ specified price</p>
 
           
           <div class="method-source-code" id="put_account_order_limit-source">
-            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 365</span>
+            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 371</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">put_account_order_limit</span>( 
         <span class="ruby-value">market:</span>,
         <span class="ruby-value">side:</span>,
         <span class="ruby-value">quantity:</span>,
+        <span class="ruby-value">amount:</span>,
         <span class="ruby-value">price:</span>,
         <span class="ruby-value">venue:</span>      <span class="ruby-ivar">@context</span>[<span class="ruby-value">:venue</span>].<span class="ruby-identifier">to_s</span>,
         <span class="ruby-value">accountid:</span>  <span class="ruby-ivar">@context</span>[<span class="ruby-value">:accountid</span>],
@@ -1605,10 +1614,11 @@ specified price</p>
                 <span class="ruby-string">&quot;venueKeyId&quot;</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">venuekeyid</span>,
                 <span class="ruby-string">&quot;orderType&quot;</span>  <span class="ruby-operator">=&gt;</span> <span class="ruby-string">&quot;limit&quot;</span>,
                 <span class="ruby-string">&quot;side&quot;</span>       <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">side</span>,
-                <span class="ruby-string">&quot;quantity&quot;</span>   <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">quantity</span>,
                 <span class="ruby-string">&quot;price&quot;</span>      <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">price</span>,
                 <span class="ruby-string">&quot;market&quot;</span>     <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">market</span>
         }
+        <span class="ruby-identifier">body</span>[<span class="ruby-string">&#39;quantity&#39;</span>] = <span class="ruby-identifier">quantity</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">quantity</span>
+        <span class="ruby-identifier">body</span>[<span class="ruby-string">&#39;amount&#39;</span>]   = <span class="ruby-identifier">amount</span>   <span class="ruby-keyword">if</span> <span class="ruby-identifier">amount</span>
         <span class="ruby-keyword">return</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier">_rest_call</span>( <span class="ruby-value">:post</span>, <span class="ruby-value">:core</span>, <span class="ruby-identifier">uripath</span>, <span class="ruby-keyword">nil</span>, <span class="ruby-identifier">errormsg</span>, <span class="ruby-identifier">body</span>.<span class="ruby-identifier">to_json</span> )
 <span class="ruby-keyword">end</span></pre>
           </div>
@@ -1640,7 +1650,7 @@ specified price</p>
 
           
           <div class="method-source-code" id="put_account_order_market-source">
-            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 341</span>
+            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 347</span>
 <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">put_account_order_market</span>(
         <span class="ruby-value">market:</span>,
         <span class="ruby-value">side:</span>,
@@ -1658,6 +1668,60 @@ specified price</p>
                 <span class="ruby-string">&#39;orderType&#39;</span>  <span class="ruby-operator">=&gt;</span> <span class="ruby-string">&#39;market&#39;</span>,
                 <span class="ruby-string">&#39;side&#39;</span>       <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">side</span>,
                 <span class="ruby-string">&#39;market&#39;</span>     <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">market</span>
+        }
+        <span class="ruby-identifier">body</span>[<span class="ruby-string">&#39;quantity&#39;</span>] = <span class="ruby-identifier">quantity</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">quantity</span>
+        <span class="ruby-identifier">body</span>[<span class="ruby-string">&#39;amount&#39;</span>]   = <span class="ruby-identifier">amount</span>   <span class="ruby-keyword">if</span> <span class="ruby-identifier">amount</span>
+        <span class="ruby-keyword">return</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier">_rest_call</span>( <span class="ruby-value">:post</span>, <span class="ruby-value">:core</span>, <span class="ruby-identifier">uripath</span>, <span class="ruby-keyword">nil</span>, <span class="ruby-identifier">errormsg</span>, <span class="ruby-identifier">body</span>.<span class="ruby-identifier">to_json</span> )
+<span class="ruby-keyword">end</span></pre>
+          </div>
+          
+        </div>
+
+        
+
+        
+      </div>
+
+    
+      <div id="method-i-put_account_order_stop" class="method-detail ">
+        
+        <div class="method-heading">
+          <span class="method-name">put_account_order_stop</span><span
+            class="method-args">( market:, side:, quantity:, amount:, triggerprice:, venue: @context[:venue].to_s, accountid: @context[:accountid], venuekeyid: @context[:venuekeyid] )</span>
+          
+          <span class="method-click-advice">click to toggle source</span>
+          
+        </div>
+        
+
+        <div class="method-description">
+          
+          <p>Create a new stop loss order under a venue account</p>
+          
+          
+
+          
+          <div class="method-source-code" id="put_account_order_stop-source">
+            <pre><span class="ruby-comment"># File lib/cryptomnio.rb, line 397</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">put_account_order_stop</span>( 
+        <span class="ruby-value">market:</span>,
+        <span class="ruby-value">side:</span>,
+        <span class="ruby-value">quantity:</span>,
+        <span class="ruby-value">amount:</span>,
+        <span class="ruby-value">triggerprice:</span>,
+        <span class="ruby-value">venue:</span>      <span class="ruby-ivar">@context</span>[<span class="ruby-value">:venue</span>].<span class="ruby-identifier">to_s</span>,
+        <span class="ruby-value">accountid:</span>  <span class="ruby-ivar">@context</span>[<span class="ruby-value">:accountid</span>],
+        <span class="ruby-value">venuekeyid:</span> <span class="ruby-ivar">@context</span>[<span class="ruby-value">:venuekeyid</span>] )
+
+        <span class="ruby-identifier">uripath</span>  = <span class="ruby-string">&quot;/venues/exchanges/&quot;</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">venue</span> <span class="ruby-operator">+</span> <span class="ruby-string">&quot;/accounts/&quot;</span> <span class="ruby-operator">+</span> <span class="ruby-identifier">accountid</span> <span class="ruby-operator">+</span> <span class="ruby-string">&quot;/orders&quot;</span>
+        <span class="ruby-identifier">errormsg</span> = <span class="ruby-string">&quot;Creation of new limit order for account %s failed.&quot;</span> <span class="ruby-operator">%</span> <span class="ruby-identifier">accountid</span>
+        <span class="ruby-identifier">body</span>     = {
+                <span class="ruby-string">&quot;venue&quot;</span>        <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">venue</span>,
+                <span class="ruby-string">&quot;venueKeyId&quot;</span>   <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">venuekeyid</span>,
+                <span class="ruby-string">&quot;orderType&quot;</span>    <span class="ruby-operator">=&gt;</span> <span class="ruby-string">&quot;stop&quot;</span>,
+                <span class="ruby-string">&quot;side&quot;</span>         <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">side</span>,
+                <span class="ruby-string">&quot;triggerPrice&quot;</span> <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">triggerprice</span>,
+                <span class="ruby-string">&quot;market&quot;</span>       <span class="ruby-operator">=&gt;</span> <span class="ruby-identifier">market</span>
         }
         <span class="ruby-identifier">body</span>[<span class="ruby-string">&#39;quantity&#39;</span>] = <span class="ruby-identifier">quantity</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">quantity</span>
         <span class="ruby-identifier">body</span>[<span class="ruby-string">&#39;amount&#39;</span>]   = <span class="ruby-identifier">amount</span>   <span class="ruby-keyword">if</span> <span class="ruby-identifier">amount</span>
