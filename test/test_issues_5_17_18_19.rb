@@ -11,6 +11,10 @@ require 'shellwords'
 require 'tempfile'
 require 'fileutils'
 
+$LOAD_PATH.unshift(File.expand_path('../lib', __FILE__)) unless
+  $LOAD_PATH.include?(File.expand_path('../lib', __FILE__))
+require 'cryptomnio'
+
 # ---------------------------------------------------------------------------
 # Stub config — no live API calls required
 # ---------------------------------------------------------------------------
@@ -458,5 +462,47 @@ class TestIssue17CaseInsensitiveMatch < Minitest::Test
     result = @client.get_account_balance_symbol(symbol: "eth")
     assert_equal 0.0, result  # "0".to_f == 0.0, but currency is present so must not raise
     assert_instance_of Float, result
+  end
+end
+
+# ============================================================================
+# Issue #19 — geminfo prints API_VERSION on API version line
+# ============================================================================
+class TestIssue19GeminfoApiVersion < Minitest::Test
+  def setup
+    @instance = Cryptomnio.new
+  end
+
+  # TC-19-1: API version line shows @API_VERSION (0.24.0)
+  def test_19_1_api_version_line
+    lines = @instance.geminfo.lines
+    assert_equal "Cryptomnio API Version: 0.24.0\n", lines[2]
+  end
+
+  # TC-19-2: first line contains VERSION, not API_VERSION
+  def test_19_2_first_line_contains_version_not_api_version
+    first_line = @instance.geminfo.lines[0]
+    assert_includes first_line, @instance.VERSION
+    refute_includes first_line, @instance.API_VERSION
+  end
+
+  # TC-19-3: VERSION and API_VERSION are distinguishable
+  def test_19_3_version_and_api_version_differ
+    refute_equal @instance.VERSION, @instance.API_VERSION
+  end
+
+  # TC-19-4: API_VERSION attr_reader returns 0.24.0
+  def test_19_4_api_version_value
+    assert_equal "0.24.0", @instance.API_VERSION
+  end
+
+  # TC-19-5: VERSION attr_reader returns current gem version
+  def test_19_5_version_value
+    assert_equal "0.2.2", @instance.VERSION  # release version per #18 design
+  end
+
+  # TC-19-6: API_VERSION constant itself is unchanged
+  def test_19_6_api_version_constant_unchanged
+    assert_equal "0.24.0", @instance.API_VERSION
   end
 end

@@ -35,7 +35,7 @@ class Cryptomnio
 	def geminfo
 		info  = @NAME + " "   + @VERSION + "\n"
 		info << @DATE + " - " + @AUTHOR  + "\n"
-		info << "Cryptomnio API Version: " + @VERSION + "\n"
+		info << "Cryptomnio API Version: " + @API_VERSION + "\n"
 
 		return info
 	end
