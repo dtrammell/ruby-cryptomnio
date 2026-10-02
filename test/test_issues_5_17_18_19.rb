@@ -127,7 +127,12 @@ class TestIssue5BalanceLocal < Minitest::Test
     stub_balance(FIXTURE_MIXED)
     result = @client.get_account_balance_symbol(symbol: "btc")
     assert_equal 1.5, result
-    assert_equal before, defined?($balance), "$balance global state changed after call"
+    after = defined?($balance)
+    if before.nil?
+      assert_nil after, "$balance global state changed after call"
+    else
+      assert_equal before, after, "$balance global state changed after call"
+    end
   end
 
   # TC-5-2: get_account_available_balance_symbol must not touch/create $balance global
@@ -136,7 +141,12 @@ class TestIssue5BalanceLocal < Minitest::Test
     stub_balance(FIXTURE_MIXED)
     result = @client.get_account_available_balance_symbol(symbol: "btc")
     assert_equal 1.1, result
-    assert_equal before, defined?($balance), "$balance global state changed after call"
+    after = defined?($balance)
+    if before.nil?
+      assert_nil after, "$balance global state changed after call"
+    else
+      assert_equal before, after, "$balance global state changed after call"
+    end
   end
 
   # TC-5-3: existing $balance sentinel is preserved on balance success
@@ -690,7 +700,8 @@ class TestIssue18SingleSourceVersion < Minitest::Test
     FileUtils.rm_rf(scratch) if scratch
   end
 
-  # TC-18-15/16: install built gem to tmp gem home and verify load + version
+  # TC-18-15: install built gem to tmp gem home and verify load succeeds
+  # TC-18-16: installed gem subprocess reports VERSION "0.2.2"
   def test_18_15_16_install_and_load_built_gem
     scratch, gem_path = build_gem_in_scratch
     gem_home = Dir.mktmpdir('cryptomnio_gem_home')
