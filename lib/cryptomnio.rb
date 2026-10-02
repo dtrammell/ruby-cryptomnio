@@ -2,6 +2,7 @@ require 'rest-client'
 require 'openssl'
 require 'base64'
 require 'json'
+require_relative "cryptomnio/version"
 
 ##
 # This is the root Cryptomnio object Class.  It contains global constants.
@@ -20,9 +21,9 @@ class Cryptomnio
 		# The name of the Gem's Author
 		@AUTHOR      = "Dustin D. Trammell"
 		# The publication date of the current Gem version
-		@DATE        = "2023-01-28"
+		@DATE        = DATE
 		# The Gem version
-		@VERSION     = "0.2.1"
+		@VERSION     = VERSION
 		# The Cryptomnio API Version
 		@API_VERSION = "0.24.0"
 		# API URI Path Version Slug @URI_VERSION = "/v1"

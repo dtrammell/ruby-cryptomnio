@@ -7,6 +7,7 @@
 
 require 'minitest/autorun'
 require 'rubygems'
+require 'rubygems/package'
 require 'shellwords'
 require 'tempfile'
 require 'fileutils'
@@ -504,5 +505,358 @@ class TestIssue19GeminfoApiVersion < Minitest::Test
   # TC-19-6: API_VERSION constant itself is unchanged
   def test_19_6_api_version_constant_unchanged
     assert_equal "0.24.0", @instance.API_VERSION
+  end
+end
+
+# ============================================================================
+# Issue #18 — single-sourced VERSION / DATE
+# ============================================================================
+class TestIssue18SingleSourceVersion < Minitest::Test
+  REPO_ROOT = File.expand_path('../..', __FILE__).freeze
+  LIB_DIR   = File.expand_path('../../lib', __FILE__).freeze
+  RUBY_BIN  = RbConfig.ruby
+
+  # TC-18-1: only version.rb contains the literal "0.2.2" in lib/ and gemspec
+  def test_18_1_only_version_rb_has_release_literal
+    matches = []
+    Dir.glob(File.join(REPO_ROOT, 'lib', '**', '*.rb')).each do |rb_file|
+      matches << rb_file if File.read(rb_file).include?('0.2.2')
+    end
+    gemspec_path = File.join(REPO_ROOT, 'cryptomnio.gemspec')
+    matches << gemspec_path if File.read(gemspec_path).include?('0.2.2')
+
+    assert_equal 1, matches.length,
+      "Expected exactly one file in lib/ + gemspec to contain '0.2.2', got: #{matches.inspect}"
+    assert_equal File.join(REPO_ROOT, 'lib', 'cryptomnio', 'version.rb'), matches.first
+  end
+
+  # TC-18-2: Cryptomnio::VERSION == "0.2.2"
+  def test_18_2_version_constant
+    assert_equal "0.2.2", Cryptomnio::VERSION
+  end
+
+  # TC-18-3: Cryptomnio::DATE is a valid ISO date and not stale
+  def test_18_3_date_constant
+    assert_match(/\A\d{4}-\d{2}-\d{2}\z/, Cryptomnio::DATE)
+    refute_equal "2023-01-28", Cryptomnio::DATE
+    refute_equal "2024-11-22", Cryptomnio::DATE
+  end
+
+  # TC-18-4: gemspec version == "0.2.2"
+  def test_18_4_gemspec_version
+    spec = Gem::Specification.load(File.join(REPO_ROOT, 'cryptomnio.gemspec'))
+    assert_equal "0.2.2", spec.version.to_s
+  end
+
+  # TC-18-4b: gemspec homepage points to GitHub
+  def test_18_4b_gemspec_homepage
+    spec = Gem::Specification.load(File.join(REPO_ROOT, 'cryptomnio.gemspec'))
+    assert_equal "https://github.com/dtrammell/ruby-cryptomnio", spec.homepage
+  end
+
+  # TC-18-5: instance VERSION attr_reader == "0.2.2"
+  def test_18_5_instance_version
+    assert_equal "0.2.2", Cryptomnio.new.VERSION
+  end
+
+  # TC-18-6: geminfo first line contains VERSION
+  def test_18_6_geminfo_version_line
+    first_line = Cryptomnio.new.geminfo.lines[0]
+    assert_includes first_line, "0.2.2"
+  end
+
+  # TC-18-7: all four version sources agree
+  def test_18_7_all_version_sources_agree
+    spec = Gem::Specification.load(File.join(REPO_ROOT, 'cryptomnio.gemspec'))
+    instance = Cryptomnio.new
+    geminfo_version_line = instance.geminfo.lines[0]
+
+    assert_equal "0.2.2", Cryptomnio::VERSION
+    assert_equal "0.2.2", spec.version.to_s
+    assert_equal "0.2.2", instance.VERSION
+    assert_includes geminfo_version_line, "0.2.2"
+  end
+
+  # TC-18-8: loading gemspec does not pull in rest-client
+  def test_18_8_gemspec_does_not_require_rest_client
+    script = <<~'RUBY'
+      $LOAD_PATH.unshift(ARGV[0])
+      Gem::Specification.load(ARGV[1])
+      if defined?(RestClient)
+        puts "FAIL: RestClient defined"
+        exit 1
+      else
+        puts "PASS"
+      end
+    RUBY
+
+    tf = Tempfile.new(['tc18_8_', '.rb'])
+    begin
+      tf.write(script)
+      tf.flush
+      output = `#{RUBY_BIN.shellescape} #{tf.path.shellescape} #{LIB_DIR.shellescape} #{File.join(REPO_ROOT, 'cryptomnio.gemspec').shellescape} 2>&1`
+      assert $?.success?, "subprocess failed. Output: #{output}"
+      assert_match(/PASS/, output, "RestClient was defined when loading gemspec. Output: #{output}")
+    ensure
+      tf.close
+      tf.unlink
+    end
+  end
+
+  # TC-18-9: loading gemspec does not pull in openssl via the library
+  def test_18_9_gemspec_does_not_require_openssl
+    script = <<~'RUBY'
+      $LOAD_PATH.unshift(ARGV[0])
+      Gem::Specification.load(ARGV[1])
+      if defined?(OpenSSL::HMAC)
+        puts "FAIL: OpenSSL::HMAC defined"
+        exit 1
+      else
+        puts "PASS"
+      end
+    RUBY
+
+    tf = Tempfile.new(['tc18_9_', '.rb'])
+    begin
+      tf.write(script)
+      tf.flush
+      output = `#{RUBY_BIN.shellescape} #{tf.path.shellescape} #{LIB_DIR.shellescape} #{File.join(REPO_ROOT, 'cryptomnio.gemspec').shellescape} 2>&1`
+      assert $?.success?, "subprocess failed. Output: #{output}"
+      assert_match(/PASS/, output, "OpenSSL::HMAC was defined when loading gemspec. Output: #{output}")
+    ensure
+      tf.close
+      tf.unlink
+    end
+  end
+
+  # TC-18-10: source gemspec files include version.rb
+  def test_18_10_gemspec_files_include_version_rb
+    spec = Gem::Specification.load(File.join(REPO_ROOT, 'cryptomnio.gemspec'))
+    assert_includes spec.files, "lib/cryptomnio/version.rb"
+  end
+
+  # TC-18-11: source gemspec files include LICENSE
+  def test_18_11_gemspec_files_include_license
+    spec = Gem::Specification.load(File.join(REPO_ROOT, 'cryptomnio.gemspec'))
+    assert_includes spec.files, "LICENSE"
+  end
+
+  # TC-18-12/13/14/14b/15/16/16b helpers: build gem in scratch copy
+  def build_gem_in_scratch
+    scratch = Dir.mktmpdir('cryptomnio_build')
+    FileUtils.cp_r(File.join(REPO_ROOT, '.'), scratch)
+    gem_path = File.join(scratch, 'cryptomnio-0.2.2.gem')
+
+    Dir.chdir(scratch) do
+      output = `gem build cryptomnio.gemspec 2>&1`
+      assert $?.success?, "gem build failed. Output: #{output}"
+      assert File.exist?(gem_path), "Expected gem artifact not found at #{gem_path}"
+    end
+
+    [scratch, gem_path]
+  end
+
+  # TC-18-12: gem build succeeds and produces artifact
+  def test_18_12_gem_build_succeeds
+    scratch, _gem_path = build_gem_in_scratch
+  ensure
+    FileUtils.rm_rf(scratch) if scratch
+  end
+
+  # TC-18-13: built artifact includes version.rb
+  def test_18_13_built_artifact_includes_version_rb
+    scratch, gem_path = build_gem_in_scratch
+    spec = Gem::Package.new(gem_path).spec
+    assert_includes spec.files, "lib/cryptomnio/version.rb"
+  ensure
+    FileUtils.rm_rf(scratch) if scratch
+  end
+
+  # TC-18-14: built artifact includes LICENSE
+  def test_18_14_built_artifact_includes_license
+    scratch, gem_path = build_gem_in_scratch
+    spec = Gem::Package.new(gem_path).spec
+    assert_includes spec.files, "LICENSE"
+  ensure
+    FileUtils.rm_rf(scratch) if scratch
+  end
+
+  # TC-18-14b: built artifact homepage is GitHub URL
+  def test_18_14b_built_artifact_homepage
+    scratch, gem_path = build_gem_in_scratch
+    spec = Gem::Package.new(gem_path).spec
+    assert_equal "https://github.com/dtrammell/ruby-cryptomnio", spec.homepage
+  ensure
+    FileUtils.rm_rf(scratch) if scratch
+  end
+
+  # TC-18-15/16: install built gem to tmp gem home and verify load + version
+  def test_18_15_16_install_and_load_built_gem
+    scratch, gem_path = build_gem_in_scratch
+    gem_home = Dir.mktmpdir('cryptomnio_gem_home')
+
+    install_output = `gem install --install-dir #{gem_home.shellescape} --no-document #{gem_path.shellescape} 2>&1`
+    assert $?.success?, "gem install failed. Output: #{install_output}"
+
+    script = <<~'RUBY'
+      gem_home = ARGV[0]
+      gem_lib = File.join(gem_home, 'gems', 'cryptomnio-0.2.2', 'lib')
+      $LOAD_PATH.unshift(gem_lib)
+      ENV['GEM_HOME'] = gem_home
+      ENV['GEM_PATH'] = gem_home
+      require 'cryptomnio'
+      puts "VERSION=#{Cryptomnio.new.VERSION}"
+      puts "PASS"
+    RUBY
+
+    tf = Tempfile.new(['tc18_15_16_', '.rb'])
+    begin
+      tf.write(script)
+      tf.flush
+      output = `#{RUBY_BIN.shellescape} #{tf.path.shellescape} #{gem_home.shellescape} 2>&1`
+      assert $?.success?, "subprocess failed. Output: #{output}"
+      assert_match(/PASS/, output, "require 'cryptomnio' failed in installed gem. Output: #{output}")
+      assert_match(/VERSION=0\.2\.2/, output, "Installed gem version mismatch. Output: #{output}")
+    ensure
+      tf.close
+      tf.unlink
+      FileUtils.rm_rf(gem_home)
+      FileUtils.rm_rf(scratch)
+    end
+  end
+
+  # TC-18-16b: three-way DATE agreement from built artifact
+  def test_18_16b_date_agreement
+    scratch, gem_path = build_gem_in_scratch
+    begin
+      packaged_spec = Gem::Package.new(gem_path).spec
+      instance = Cryptomnio.new
+      geminfo_date = instance.geminfo.lines[1].split(' - ').first
+
+      assert_equal Cryptomnio::DATE, geminfo_date
+
+      if packaged_spec.date
+        assert_equal Cryptomnio::DATE, packaged_spec.date.strftime("%Y-%m-%d")
+      end
+    ensure
+      FileUtils.rm_rf(scratch)
+    end
+  end
+
+  # TC-18-17: CHANGELOG contains 0.2.2 heading
+  def test_18_17_changelog_has_0_2_2
+    content = File.read(File.join(REPO_ROOT, 'CHANGELOG.md'))
+    assert_match(/##\s+0\.2\.2/, content)
+  end
+
+  # TC-18-18: CHANGELOG does not contain 0.2.1 heading
+  def test_18_18_changelog_no_0_2_1
+    content = File.read(File.join(REPO_ROOT, 'CHANGELOG.md'))
+    refute_match(/##\s+0\.2\.1/, content)
+  end
+
+  # TC-18-19: 0.2.0 section is byte-identical to pre-change
+  def test_18_19_changelog_0_2_0_unchanged
+    current = File.read(File.join(REPO_ROOT, 'CHANGELOG.md'))
+    original = `git -C #{REPO_ROOT.shellescape} show ac29adf:CHANGELOG.md 2>&1`
+    skip "git baseline unavailable: #{original}" unless $?.success?
+
+    current_section = current[current.index("## 0.2.0")..-1]
+    original_section = original[original.index("## 0.2.0")..-1]
+    assert_equal original_section, current_section,
+      "0.2.0 CHANGELOG section must remain byte-identical to ac29adf"
+  end
+end
+
+# ============================================================================
+# LICENSE file tests
+# ============================================================================
+class TestLicense < Minitest::Test
+  REPO_ROOT = File.expand_path('../..', __FILE__).freeze
+
+  # TC-LIC-1: LICENSE exists at repo root
+  def test_lic_1_exists
+    assert File.exist?(File.join(REPO_ROOT, 'LICENSE'))
+  end
+
+  # TC-LIC-2: LICENSE contains MIT opening phrase
+  def test_lic_2_mit_opening
+    content = File.read(File.join(REPO_ROOT, 'LICENSE'))
+    assert_includes content, "Permission is hereby granted, free of charge"
+  end
+
+  # TC-LIC-3: LICENSE contains a Copyright line
+  def test_lic_3_copyright_line
+    content = File.read(File.join(REPO_ROOT, 'LICENSE'))
+    assert_match(/Copyright/i, content)
+  end
+
+  # TC-LIC-4: Copyright includes Dustin D. Trammell
+  def test_lic_4_copyright_holder
+    content = File.read(File.join(REPO_ROOT, 'LICENSE'))
+    assert_includes content, "Dustin D. Trammell"
+  end
+
+  # TC-LIC-5: gemspec files include LICENSE
+  def test_lic_5_gemspec_files_include_license
+    spec = Gem::Specification.load(File.join(REPO_ROOT, 'cryptomnio.gemspec'))
+    assert_includes spec.files, "LICENSE"
+  end
+end
+
+# ============================================================================
+# Cross-cutting regression tests
+# ============================================================================
+class TestRegression < Minitest::Test
+  REPO_ROOT = File.expand_path('../..', __FILE__).freeze
+  RUBY_BIN  = RbConfig.ruby
+
+  # TC-REG-1: existing test_issues_6_7_8.rb still passes unmodified
+  def test_reg_1_existing_suite_still_passes
+    output = `#{RUBY_BIN.shellescape} #{File.join(REPO_ROOT, 'test', 'test_issues_6_7_8.rb').shellescape} 2>&1`
+    assert $?.success?, "test_issues_6_7_8.rb failed. Output: #{output}"
+    assert_match(/0 failures, 0 errors/, output, "Existing suite had failures/errors. Output: #{output}")
+  end
+
+  # TC-REG-2: full rake test passes
+  # Guarded against recursive invocation because this test itself runs inside rake test.
+  def test_reg_2_full_rake_test
+    if ENV['CRYPTOMNIO_REG2_RUNNING']
+      skip "Already inside the recursive rake test run"
+    end
+    output = `cd #{REPO_ROOT.shellescape} && CRYPTOMNIO_REG2_RUNNING=1 rake test 2>&1`
+    assert $?.success?, "rake test failed. Output: #{output}"
+    assert_match(/0 failures, 0 errors/, output, "rake test had failures/errors. Output: #{output}")
+  end
+
+  # TC-REG-3: ruby -c lib/cryptomnio.rb
+  def test_reg_3_syntax_check_main
+    output = `#{RUBY_BIN.shellescape} -c #{File.join(REPO_ROOT, 'lib', 'cryptomnio.rb').shellescape} 2>&1`
+    assert $?.success?, "lib/cryptomnio.rb syntax check failed. Output: #{output}"
+    assert_match(/Syntax OK/, output)
+  end
+
+  # TC-REG-4: ruby -c lib/cryptomnio/version.rb
+  def test_reg_4_syntax_check_version
+    output = `#{RUBY_BIN.shellescape} -c #{File.join(REPO_ROOT, 'lib', 'cryptomnio', 'version.rb').shellescape} 2>&1`
+    assert $?.success?, "lib/cryptomnio/version.rb syntax check failed. Output: #{output}"
+    assert_match(/Syntax OK/, output)
+  end
+
+  # TC-REG-5: gem build in scratch copy has no missing-file warnings for s.files
+  def test_reg_5_gem_build_no_missing_files
+    scratch = Dir.mktmpdir('cryptomnio_build')
+    FileUtils.cp_r(File.join(REPO_ROOT, '.'), scratch)
+
+    Dir.chdir(scratch) do
+      output = `gem build cryptomnio.gemspec 2>&1`
+      assert $?.success?, "gem build failed. Output: #{output}"
+
+      refute_match(/lib\/cryptomnio\/version\.rb.*(does not exist|not found)/i, output)
+      refute_match(/LICENSE.*(does not exist|not found)/i, output)
+      refute_match(/lib\/cryptomnio\.rb.*(does not exist|not found)/i, output)
+    end
+  ensure
+    FileUtils.rm_rf(scratch) if scratch
   end
 end
