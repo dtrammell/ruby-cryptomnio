@@ -281,18 +281,18 @@ puts "Retries: #{retries} | response.code: #{response.code}"
 		venuekeyid: @context[:venuekeyid] )
 
 		symbol = symbol.downcase
-		$balance = nil
+		balance = nil
 		# TODO: Check cached balance's timestamp, if too old, update balances
 		# Retrieve all balances for account
 		@balances = self.get_account_balance( venue: venue, accountid: accountid, venuekeyid: venuekeyid )
 		# Find the balance for the symbol we want
 		@balances["assets"].each do |asset|
-			$balance = asset["amount"] if asset["currency"] == symbol
+			balance = asset["amount"] if asset["currency"] == symbol
 		end
 		# Raise an exception if the requested symbol is not found
-		raise "No balance returned for currency symbol \"%s\"" % symbol if ! $balance
+		raise "No balance returned for currency symbol \"%s\"" % symbol if ! balance
 		# Return balance for requested symbol as a floating-point integer
-		return $balance.to_f
+		return balance.to_f
 	end
 
 	# Get account balance for symbol
@@ -303,18 +303,18 @@ puts "Retries: #{retries} | response.code: #{response.code}"
 		venuekeyid: @context[:venuekeyid] )
 
 		symbol = symbol.downcase
-		$balance = nil
+		balance = nil
 		# TODO: Check cached balance's timestamp, if too old, update balances
 		# Retrieve all balances for account
 		@balances = self.get_account_balance( venue: venue, accountid: accountid, venuekeyid: venuekeyid )
 		# Find the balance for the symbol we want
 		@balances["assets"].each do |asset|
-			$balance = asset["available"] if asset["currency"] == symbol
+			balance = asset["available"] if asset["currency"] == symbol
 		end
 		# Raise an exception if the requested symbol is not found
-		raise "No balance returned for currency symbol \"%s\"" % symbol if ! $balance
+		raise "No balance returned for currency symbol \"%s\"" % symbol if ! balance
 		# Return balance for requested symbol as a floating-point integer
-		return $balance.to_f
+		return balance.to_f
 	end
 
 	# Return an array of hashes of a venue account's orders
