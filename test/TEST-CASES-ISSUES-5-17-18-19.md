@@ -6,8 +6,9 @@ following the conventions in `test/test_issues_6_7_8.rb` (minitest, `build_clien
 HTTP, `rake test` / `ruby test/test_issues_5_17_18_19.rb`).
 
 Batch scope: #5 ($balance global→local), #17 (case-insensitive currency match), #18
-(single-sourced VERSION/DATE via `lib/cryptomnio/version.rb`), #19 (`geminfo` API-version line),
-plus the companion LICENSE file and CHANGELOG 0.2.2 entry that ship with #18.
+(single-sourced VERSION/DATE via `lib/cryptomnio/version.rb`, plus gemspec `s.homepage` change to
+the GitHub repo URL), #19 (`geminfo` API-version line), plus the companion LICENSE file and
+CHANGELOG 0.2.2 entry that ship with #18.
 
 ---
 
@@ -151,7 +152,7 @@ Setup for all: `client = build_client`, stub `get_account_balance` to return the
 
 ---
 
-## 3. Issue #18 — single-sourced VERSION / DATE (19 cases)
+## 3. Issue #18 — single-sourced VERSION / DATE (21 cases)
 
 | ID | Setup | Check | Expected |
 |---|---|---|---|
@@ -159,6 +160,7 @@ Setup for all: `client = build_client`, stub `get_account_balance` to return the
 | TC-18-2 | `require 'cryptomnio/version'` (lib on `$LOAD_PATH`) | `Cryptomnio::VERSION` | `== "0.2.2"` |
 | TC-18-3 | Same | `Cryptomnio::DATE` | Matches `/\A\d{4}-\d{2}-\d{2}\z/` and is **not** either stale value (`"2023-01-28"` or `"2024-11-22"`) |
 | TC-18-4 | `Gem::Specification.load("cryptomnio.gemspec")` | `.version.to_s` | `== "0.2.2"` |
+| TC-18-4b | `Gem::Specification.load("cryptomnio.gemspec")` | `.homepage` | `== "https://github.com/dtrammell/ruby-cryptomnio"` — scope addition (I)ruid, 2026-10-02 23:22Z), ships in the #18 commit, replaces `https://cryptomnio.com/dev/lib/ruby` |
 | TC-18-5 | `build_client`-style load, `Cryptomnio.new.VERSION` | attr_reader value | `== "0.2.2"` |
 | TC-18-6 | `Cryptomnio.new.geminfo` | first line | Contains `"0.2.2"` |
 | TC-18-7 | Combine TC-18-2/4/5/6 in one assertion | `Cryptomnio::VERSION`, gemspec version, instance `.VERSION`, and geminfo's version line | All four equal `"0.2.2"` and equal each other |
@@ -169,6 +171,7 @@ Setup for all: `client = build_client`, stub `get_account_balance` to return the
 | TC-18-12 | Run `gem build cryptomnio.gemspec` in a scratch copy of the repo (tmp dir, so the artifact isn't left in the working tree) | exit status | `0`; produces `cryptomnio-0.2.2.gem` |
 | TC-18-13 | `Gem::Package.new("cryptomnio-0.2.2.gem").spec.files` (or equivalent `tar tzf` on the extracted `data.tar.gz`) | file list of the **built artifact** | Includes `"lib/cryptomnio/version.rb"` |
 | TC-18-14 | Same built-artifact inspection | file list | Includes `"LICENSE"` |
+| TC-18-14b | Read `.homepage` from the **built/packaged artifact's own spec** — e.g. `Gem::Package.new("cryptomnio-0.2.2.gem").spec.homepage` — not a hard-coded string in the test, and not `Gem::Specification.load` on the source `.gemspec` (that's TC-18-4b's job) | value | `== "https://github.com/dtrammell/ruby-cryptomnio"` — confirms the new homepage actually made it into the packaged artifact, not just the working-tree gemspec |
 | TC-18-15 | Install the built `.gem` with `gem install --install-dir <tmp_gem_home> --no-document cryptomnio-0.2.2.gem`, then in a subprocess with `GEM_HOME`/`GEM_PATH` set to `<tmp_gem_home>` and that dir's `gems/cryptomnio-0.2.2/lib` on `$LOAD_PATH` (or via `gem` + `require`) | `require 'cryptomnio'` | Succeeds with no `LoadError` (catches the exact #18 failure mode: `s.files` omitting `version.rb`) |
 | TC-18-16 | Same installed-gem subprocess | `Cryptomnio.new.VERSION` (or geminfo) | Reports `"0.2.2"` — full round trip through the real packaged artifact, not the working tree |
 | TC-18-17 | `File.read("CHANGELOG.md")` | content | Contains a `## 0.2.2` heading |
@@ -220,11 +223,11 @@ Setup for all: `client = build_client`, stub `get_account_balance` to return the
 |---|---|
 | #5 ($balance global→local) | 10 |
 | #17 (case-insensitive match) | 28 |
-| #18 (single-source VERSION/DATE) | 19 |
+| #18 (single-source VERSION/DATE) | 21 |
 | #19 (geminfo API version line) | 6 |
 | LICENSE | 5 |
 | Cross-cutting regression | 5 |
-| **Total** | **73** |
+| **Total** | **75** |
 
 ---
 
@@ -246,3 +249,7 @@ Setup for all: `client = build_client`, stub `get_account_balance` to return the
 - TC-18-12/13/14/15/16 should build/install in a tmp directory, not the working tree, and clean up
   after themselves (temp `GEM_HOME`, temp `.gem` file) so `rake test` stays idempotent and doesn't
   leave build artifacts for git to pick up.
+- TC-18-14b (homepage) must read the value off the **built `.gem`'s own spec** (e.g.
+  `Gem::Package.new(path).spec.homepage`), not assert against a literal string duplicated in the
+  test file — the point is to prove the new URL survived packaging, not to restate it. TC-18-4b is
+  the separate, narrower check that the source gemspec itself declares the new URL.
