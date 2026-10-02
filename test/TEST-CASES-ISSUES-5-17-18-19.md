@@ -152,7 +152,7 @@ Setup for all: `client = build_client`, stub `get_account_balance` to return the
 
 ---
 
-## 3. Issue #18 — single-sourced VERSION / DATE (21 cases)
+## 3. Issue #18 — single-sourced VERSION / DATE (22 cases)
 
 | ID | Setup | Check | Expected |
 |---|---|---|---|
@@ -174,6 +174,7 @@ Setup for all: `client = build_client`, stub `get_account_balance` to return the
 | TC-18-14b | Read `.homepage` from the **built/packaged artifact's own spec** — e.g. `Gem::Package.new("cryptomnio-0.2.2.gem").spec.homepage` — not a hard-coded string in the test, and not `Gem::Specification.load` on the source `.gemspec` (that's TC-18-4b's job) | value | `== "https://github.com/dtrammell/ruby-cryptomnio"` — confirms the new homepage actually made it into the packaged artifact, not just the working-tree gemspec |
 | TC-18-15 | Install the built `.gem` with `gem install --install-dir <tmp_gem_home> --no-document cryptomnio-0.2.2.gem`, then in a subprocess with `GEM_HOME`/`GEM_PATH` set to `<tmp_gem_home>` and that dir's `gems/cryptomnio-0.2.2/lib` on `$LOAD_PATH` (or via `gem` + `require`) | `require 'cryptomnio'` | Succeeds with no `LoadError` (catches the exact #18 failure mode: `s.files` omitting `version.rb`) |
 | TC-18-16 | Same installed-gem subprocess | `Cryptomnio.new.VERSION` (or geminfo) | Reports `"0.2.2"` — full round trip through the real packaged artifact, not the working tree |
+| TC-18-16b | Three-way DATE agreement, mirroring TC-18-7's VERSION agreement (gap flagged in review, NOVA 2026-10-02). Reuse the built artifact from TC-18-12/13: `Gem::Package.new("cryptomnio-0.2.2.gem").spec.date` **if present** — note RubyGems stores `s.date` as a `Time`, so format with `.strftime("%Y-%m-%d")` before comparing to a string. Also parse the date substring out of `Cryptomnio.new.geminfo` line 2 (`@DATE + " - " + @AUTHOR`). | `Cryptomnio::DATE` == formatted built-artifact gemspec date == geminfo's line-2 date substring | All three agree. **If the gemspec omits `s.date` entirely** (RubyGems then defaults it to build time at the package layer — a legitimate choice per #18's "dropping `s.date` is also an option"), skip only the gemspec leg of this comparison with a code comment explaining why, but still assert `Cryptomnio::DATE` == geminfo's date substring. This is the DATE analog of TC-18-7/TC-18-3, closing the gap that let #18's date drift (`2023-01-28` vs `2024-11-22`) go unnoticed in the first place — read from the **built artifact**, not the working-tree gemspec, so that specific drift can't recur silently. |
 | TC-18-17 | `File.read("CHANGELOG.md")` | content | Contains a `## 0.2.2` heading |
 | TC-18-18 | Same | content | Does **not** contain a `## 0.2.1` heading (no backfill per spec) |
 | TC-18-19 | Same | content | Existing `## 0.2.0` section text is byte-identical to the pre-change CHANGELOG (no accidental edit) |
@@ -213,7 +214,7 @@ Setup for all: `client = build_client`, stub `get_account_balance` to return the
 | TC-REG-2 | `rake test` (full `test/` dir) | Exit code `0`, zero failures/errors |
 | TC-REG-3 | `ruby -c lib/cryptomnio.rb` | Exit `0` ("Syntax OK") — CI parity |
 | TC-REG-4 | `ruby -c lib/cryptomnio/version.rb` | Exit `0` ("Syntax OK") — new file, CI parity |
-| TC-REG-5 | `gem build cryptomnio.gemspec` (scratch copy) | Exit `0`, no warnings about missing files in `s.files` |
+| TC-REG-5 | `gem build cryptomnio.gemspec` (scratch copy); capture combined stdout+stderr | Exit `0`; AND combined output contains no line matching `/does not exist|not found/i` naming a file listed in `s.files` (e.g. `/lib\/cryptomnio\/version\.rb.*(does not exist\|not found)/i` or `/LICENSE.*(does not exist\|not found)/i`). Narrowed from a blanket "no warnings" per review (NOVA, 2026-10-02): `gem build` legitimately emits unrelated warnings (e.g. metadata recommendations) on Ruby 3.3/3.4/4.0 that would otherwise flake CI — this case targets only the `s.files`-integrity failure mode #18 actually cares about. |
 
 ---
 
@@ -223,11 +224,11 @@ Setup for all: `client = build_client`, stub `get_account_balance` to return the
 |---|---|
 | #5 ($balance global→local) | 10 |
 | #17 (case-insensitive match) | 28 |
-| #18 (single-source VERSION/DATE) | 21 |
+| #18 (single-source VERSION/DATE) | 22 |
 | #19 (geminfo API version line) | 6 |
 | LICENSE | 5 |
 | Cross-cutting regression | 5 |
-| **Total** | **75** |
+| **Total** | **76** |
 
 ---
 
@@ -253,3 +254,16 @@ Setup for all: `client = build_client`, stub `get_account_balance` to return the
   `Gem::Package.new(path).spec.homepage`), not assert against a literal string duplicated in the
   test file — the point is to prove the new URL survived packaging, not to restate it. TC-18-4b is
   the separate, narrower check that the source gemspec itself declares the new URL.
+- TC-18-16b (DATE agreement) follows the same built-artifact-not-working-tree principle as
+  TC-18-14b/TC-18-13. `Gem::Specification#date` is typed `Time`, not `String` — compare via
+  `.strftime("%Y-%m-%d")`, not `==` against a raw string, or the assertion will always fail
+  regardless of correctness. If Coder drops `s.date` from the gemspec (explicitly permitted by
+  #18), the test must detect that condition (e.g. `spec.date.nil?` won't apply since RubyGems
+  back-fills a default — instead check whether the gemspec source literally sets `s.date`, or
+  simply treat the gemspec leg as best-effort/skippable and keep the geminfo-vs-DATE leg as the
+  hard assertion) rather than silently passing on a build-time default that was never meant to be
+  meaningful.
+- TC-REG-5's regex is intentionally narrow (per review) — do not widen it back to "zero warnings"
+  or it will flake on unrelated `gem build` metadata warnings across the CI matrix (3.3/3.4/4.0).
+  If a future `gem build` warning format changes, adjust the pattern, not the intent (catch
+  `s.files` entries that don't exist on disk at build time).
