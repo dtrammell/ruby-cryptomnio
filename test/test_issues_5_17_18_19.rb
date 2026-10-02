@@ -215,3 +215,248 @@ class TestIssue5BalanceLocal < Minitest::Test
     assert_equal 150.75, @client.get_account_available_balance_symbol(symbol: "usd")
   end
 end
+
+# ============================================================================
+# Issue #17 — case-insensitive currency symbol match
+# ============================================================================
+class TestIssue17CaseInsensitiveMatch < Minitest::Test
+  def setup
+    @client = build_client
+  end
+
+  def teardown
+    @client.singleton_class.remove_method(:get_account_balance) rescue nil
+  end
+
+  def stub_balance(fixture)
+    @client.define_singleton_method(:get_account_balance) { |*| fixture }
+  end
+
+  # --- 2a. get_account_balance_symbol happy path ---
+
+  # TC-17-1: lowercase symbol matches uppercase currency
+  def test_17_1_balance_lowercase_symbol_uppercase_currency
+    stub_balance(FIXTURE_MIXED)
+    result = @client.get_account_balance_symbol(symbol: "btc")
+    assert_equal 1.5, result
+    assert_instance_of Float, result
+  end
+
+  # TC-17-2: uppercase symbol matches uppercase currency
+  def test_17_2_balance_uppercase_symbol_uppercase_currency
+    stub_balance(FIXTURE_MIXED)
+    result = @client.get_account_balance_symbol(symbol: "BTC")
+    assert_equal 1.5, result
+    assert_instance_of Float, result
+  end
+
+  # TC-17-3: mixed-case symbol matches uppercase currency
+  def test_17_3_balance_mixed_case_symbol_uppercase_currency
+    stub_balance(FIXTURE_MIXED)
+    result = @client.get_account_balance_symbol(symbol: "BtC")
+    assert_equal 1.5, result
+    assert_instance_of Float, result
+  end
+
+  # TC-17-4: lowercase symbol matches mixed-case currency
+  def test_17_4_balance_lowercase_symbol_mixed_case_currency
+    stub_balance(FIXTURE_MIXED_CASE)
+    result = @client.get_account_balance_symbol(symbol: "btc")
+    assert_equal 1.5, result
+    assert_instance_of Float, result
+  end
+
+  # TC-17-5: uppercase symbol matches mixed-case currency
+  def test_17_5_balance_uppercase_symbol_mixed_case_currency
+    stub_balance(FIXTURE_MIXED_CASE)
+    result = @client.get_account_balance_symbol(symbol: "BTC")
+    assert_equal 1.5, result
+    assert_instance_of Float, result
+  end
+
+  # TC-17-6: returns amount field, not available
+  def test_17_6_balance_returns_amount_not_available
+    stub_balance(FIXTURE_MIXED)
+    result = @client.get_account_balance_symbol(symbol: "usd")
+    assert_equal 200.25, result  # amount from fixture, not 150.75 (available)
+    assert_instance_of Float, result
+  end
+
+  # --- 2b. get_account_available_balance_symbol happy path ---
+
+  # TC-17-7: lowercase symbol matches uppercase currency
+  def test_17_7_available_lowercase_symbol_uppercase_currency
+    stub_balance(FIXTURE_MIXED)
+    result = @client.get_account_available_balance_symbol(symbol: "btc")
+    assert_equal 1.1, result
+    assert_instance_of Float, result
+  end
+
+  # TC-17-8: uppercase symbol matches uppercase currency
+  def test_17_8_available_uppercase_symbol_uppercase_currency
+    stub_balance(FIXTURE_MIXED)
+    result = @client.get_account_available_balance_symbol(symbol: "BTC")
+    assert_equal 1.1, result
+    assert_instance_of Float, result
+  end
+
+  # TC-17-9: mixed-case symbol matches uppercase currency
+  def test_17_9_available_mixed_case_symbol_uppercase_currency
+    stub_balance(FIXTURE_MIXED)
+    result = @client.get_account_available_balance_symbol(symbol: "BtC")
+    assert_equal 1.1, result
+    assert_instance_of Float, result
+  end
+
+  # TC-17-10: lowercase symbol matches mixed-case currency
+  def test_17_10_available_lowercase_symbol_mixed_case_currency
+    stub_balance(FIXTURE_MIXED_CASE)
+    result = @client.get_account_available_balance_symbol(symbol: "btc")
+    assert_equal 1.1, result
+    assert_instance_of Float, result
+  end
+
+  # TC-17-11: uppercase symbol matches mixed-case currency
+  def test_17_11_available_uppercase_symbol_mixed_case_currency
+    stub_balance(FIXTURE_MIXED_CASE)
+    result = @client.get_account_available_balance_symbol(symbol: "BTC")
+    assert_equal 1.1, result
+    assert_instance_of Float, result
+  end
+
+  # TC-17-12: returns available field, not amount
+  def test_17_12_available_returns_available_not_amount
+    stub_balance(FIXTURE_MIXED)
+    result = @client.get_account_available_balance_symbol(symbol: "usd")
+    assert_equal 150.75, result  # available from fixture, not 200.25 (amount)
+    assert_instance_of Float, result
+  end
+
+  # --- 2c. Absent currency / adversarial inputs ---
+
+  # TC-17-13: absent currency raises RuntimeError on balance
+  def test_17_13_absent_currency_raises_on_balance
+    stub_balance(FIXTURE_MIXED)
+    error = assert_raises(RuntimeError) { @client.get_account_balance_symbol(symbol: "xrp") }
+    assert_match(/No balance returned for currency symbol "xrp"/, error.message)
+  end
+
+  # TC-17-14: absent currency raises RuntimeError on available
+  def test_17_14_absent_currency_raises_on_available
+    stub_balance(FIXTURE_MIXED)
+    error = assert_raises(RuntimeError) { @client.get_account_available_balance_symbol(symbol: "xrp") }
+    assert_match(/No balance returned for currency symbol "xrp"/, error.message)
+  end
+
+  # TC-17-15: empty assets raises RuntimeError on balance
+  def test_17_15_empty_assets_raises_on_balance
+    stub_balance(FIXTURE_EMPTY)
+    assert_raises(RuntimeError) { @client.get_account_balance_symbol(symbol: "btc") }
+  end
+
+  # TC-17-16: empty assets raises RuntimeError on available
+  def test_17_16_empty_assets_raises_on_available
+    stub_balance(FIXTURE_EMPTY)
+    assert_raises(RuntimeError) { @client.get_account_available_balance_symbol(symbol: "btc") }
+  end
+
+  # TC-17-17: nil/missing currency entries are skipped safely on balance
+  def test_17_17_nil_missing_currency_skipped_on_balance
+    stub_balance(FIXTURE_MIXED)
+    result = @client.get_account_balance_symbol(symbol: "usd")
+    assert_equal 200.25, result  # second asset, after nil/missing-currency siblings
+  end
+
+  # TC-17-18: nil/missing currency entries are skipped safely on available
+  def test_17_18_nil_missing_currency_skipped_on_available
+    stub_balance(FIXTURE_MIXED)
+    result = @client.get_account_available_balance_symbol(symbol: "usd")
+    assert_equal 150.75, result
+  end
+
+  # TC-17-19: still matches BTC correctly with adversarial siblings
+  def test_17_19_matches_btc_with_adversarial_siblings
+    stub_balance(FIXTURE_MIXED)
+    result = @client.get_account_balance_symbol(symbol: "btc")
+    assert_equal 1.5, result
+  end
+
+  # TC-17-20: still matches BTC available correctly with adversarial siblings
+  def test_17_20_matches_btc_available_with_adversarial_siblings
+    stub_balance(FIXTURE_MIXED)
+    result = @client.get_account_available_balance_symbol(symbol: "btc")
+    assert_equal 1.1, result
+  end
+
+  # TC-17-21: all nil/missing currency raises RuntimeError on balance
+  def test_17_21_all_nil_currency_raises_on_balance
+    stub_balance(FIXTURE_ALL_NIL_CURRENCY)
+    assert_raises(RuntimeError) { @client.get_account_balance_symbol(symbol: "usd") }
+  end
+
+  # TC-17-22: all nil/missing currency raises RuntimeError on available
+  def test_17_22_all_nil_currency_raises_on_available
+    stub_balance(FIXTURE_ALL_NIL_CURRENCY)
+    assert_raises(RuntimeError) { @client.get_account_available_balance_symbol(symbol: "usd") }
+  end
+
+  # --- 2d. Venue-code casing independence ---
+
+  # TC-17-23: venue casing does not affect balance matching
+  def test_17_23_venue_uppercase_balance
+    context = STUB_CONFIG[:contexts][:test].dup
+    context[:venue] = "KRAKEN"
+    @client.instance_variable_set(:@context, context)
+    stub_balance(FIXTURE_MIXED)
+    result = @client.get_account_balance_symbol(symbol: "btc")
+    assert_equal 1.5, result
+  end
+
+  # TC-17-24: mixed-case venue does not affect balance matching
+  def test_17_24_venue_mixed_case_balance
+    context = STUB_CONFIG[:contexts][:test].dup
+    context[:venue] = "Kraken"
+    @client.instance_variable_set(:@context, context)
+    stub_balance(FIXTURE_MIXED)
+    result = @client.get_account_balance_symbol(symbol: "BTC")
+    assert_equal 1.5, result
+  end
+
+  # TC-17-25: venue casing does not affect available matching
+  def test_17_25_venue_uppercase_available
+    context = STUB_CONFIG[:contexts][:test].dup
+    context[:venue] = "KRAKEN"
+    @client.instance_variable_set(:@context, context)
+    stub_balance(FIXTURE_MIXED)
+    result = @client.get_account_available_balance_symbol(symbol: "btc")
+    assert_equal 1.1, result
+  end
+
+  # TC-17-26: mixed-case venue does not affect available matching
+  def test_17_26_venue_mixed_case_available
+    context = STUB_CONFIG[:contexts][:test].dup
+    context[:venue] = "Kraken"
+    @client.instance_variable_set(:@context, context)
+    stub_balance(FIXTURE_MIXED)
+    result = @client.get_account_available_balance_symbol(symbol: "BTC")
+    assert_equal 1.1, result
+  end
+
+  # --- 2e. Direct regression against reported bugs ---
+
+  # TC-17-27: issue #17 exact reproduction no longer raises
+  def test_17_27_issue_17_exact_repro
+    stub_balance(FIXTURE_ISSUE17_REPRO)
+    result = @client.get_account_balance_symbol(symbol: "btc")
+    assert_equal 5.95177519, result  # amount from BTC asset in issue #17 repro fixture
+    assert_instance_of Float, result
+  end
+
+  # TC-17-28: zero string balance for present currency returns 0.0
+  def test_17_28_zero_string_balance_present_currency
+    stub_balance(FIXTURE_LIVE_2026_10_02)
+    result = @client.get_account_balance_symbol(symbol: "eth")
+    assert_equal 0.0, result  # "0".to_f == 0.0, but currency is present so must not raise
+    assert_instance_of Float, result
+  end
+end

@@ -287,7 +287,7 @@ puts "Retries: #{retries} | response.code: #{response.code}"
 		@balances = self.get_account_balance( venue: venue, accountid: accountid, venuekeyid: venuekeyid )
 		# Find the balance for the symbol we want
 		@balances["assets"].each do |asset|
-			balance = asset["amount"] if asset["currency"] == symbol
+			balance = asset["amount"] if asset["currency"]&.downcase == symbol
 		end
 		# Raise an exception if the requested symbol is not found
 		raise "No balance returned for currency symbol \"%s\"" % symbol if ! balance
@@ -309,7 +309,7 @@ puts "Retries: #{retries} | response.code: #{response.code}"
 		@balances = self.get_account_balance( venue: venue, accountid: accountid, venuekeyid: venuekeyid )
 		# Find the balance for the symbol we want
 		@balances["assets"].each do |asset|
-			balance = asset["available"] if asset["currency"] == symbol
+			balance = asset["available"] if asset["currency"]&.downcase == symbol
 		end
 		# Raise an exception if the requested symbol is not found
 		raise "No balance returned for currency symbol \"%s\"" % symbol if ! balance
