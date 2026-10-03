@@ -10,10 +10,8 @@ Navigation = new function() {
   this.initNavigation = function() {
     var _this = this;
 
-    $(document).keydown(function(e) {
+    document.addEventListener('keydown', function(e) {
       _this.onkeydown(e);
-    }).keyup(function(e) {
-      _this.onkeyup(e);
     });
 
     this.navigationActive = true;
@@ -21,68 +19,33 @@ Navigation = new function() {
 
   this.setNavigationActive = function(state) {
     this.navigationActive = state;
-    this.clearMoveTimeout();
-  }
-
-  this.onkeyup = function(e) {
-    if (!this.navigationActive) return;
-
-    switch(e.keyCode) {
-      case 37: //Event.KEY_LEFT:
-      case 38: //Event.KEY_UP:
-      case 39: //Event.KEY_RIGHT:
-      case 40: //Event.KEY_DOWN:
-        this.clearMoveTimeout();
-        break;
-    }
   }
 
   this.onkeydown = function(e) {
     if (!this.navigationActive) return;
-    switch(e.keyCode) {
-      case 37: //Event.KEY_LEFT:
+    switch(e.key) {
+      case 'ArrowLeft':
         if (this.moveLeft()) e.preventDefault();
         break;
-      case 38: //Event.KEY_UP:
-        if (e.keyCode == 38 || e.ctrlKey) {
+      case 'ArrowUp':
+        if (e.key == 'ArrowUp' || e.ctrlKey) {
           if (this.moveUp()) e.preventDefault();
-          this.startMoveTimeout(false);
         }
         break;
-      case 39: //Event.KEY_RIGHT:
+      case 'ArrowRight':
         if (this.moveRight()) e.preventDefault();
         break;
-      case 40: //Event.KEY_DOWN:
-        if (e.keyCode == 40 || e.ctrlKey) {
+      case 'ArrowDown':
+        if (e.key == 'ArrowDown' || e.ctrlKey) {
           if (this.moveDown()) e.preventDefault();
-          this.startMoveTimeout(true);
         }
         break;
-      case 13: //Event.KEY_RETURN:
-        if (this.$current)
-          e.preventDefault();
-          this.select(this.$current);
+      case 'Enter':
+        if (this.current) e.preventDefault();
+        this.select(this.current);
         break;
     }
-    if (e.ctrlKey && e.shiftKey) this.select(this.$current);
-  }
-
-  this.clearMoveTimeout = function() {
-    clearTimeout(this.moveTimeout);
-    this.moveTimeout = null;
-  }
-
-  this.startMoveTimeout = function(isDown) {
-    if (!$.browser.mozilla && !$.browser.opera) return;
-    if (this.moveTimeout) this.clearMoveTimeout();
-    var _this = this;
-
-    var go = function() {
-      if (!_this.moveTimeout) return;
-      _this[isDown ? 'moveDown' : 'moveUp']();
-      _this.moveTimout = setTimeout(go, 100);
-    }
-    this.moveTimeout = setTimeout(go, 200);
+    if (e.ctrlKey && e.shiftKey) this.select(this.current);
   }
 
   this.moveRight = function() {

@@ -29,7 +29,7 @@ Searcher.prototype = new function() {
 
       var results =
         performSearch(_this.data, regexps, queries, highlighters, state);
-      var hasMore = (state.limit > 0 && state.pass < 4);
+      var hasMore = (state.limit > 0 && state.pass < 6);
 
       triggerResults.call(_this, results, !hasMore);
       if (hasMore) {
@@ -51,20 +51,29 @@ Searcher.prototype = new function() {
 
   /*  ----- Utilities ------  */
   function splitQuery(query) {
-    return jQuery.grep(query.split(/(\s+|::?|\(\)?)/), function(string) {
+    return query.split(/(\s+|::?|\(\)?)/).filter(function(string) {
       return string.match(/\S/);
     });
   }
 
   function buildRegexps(queries) {
-    return jQuery.map(queries, function(query) {
-      return new RegExp(query.replace(/(.)/g, '([$1])([^$1]*?)'), 'i');
+    // A small minority of older browsers don't have RegExp.escape
+    // but it's not worth including a complex polyfill.
+    var escape = RegExp.escape || function(s) { return s };
+
+    return queries.map(function(query) {
+      var pattern = [];
+      for (var i = 0; i < query.length; i++) {
+        var char = escape(query[i]);
+        pattern.push('([' + char + '])([^' + char + ']*?)');
+      }
+      return new RegExp(pattern.join(''), 'i');
     });
   }
 
   function buildHilighters(queries) {
-    return jQuery.map(queries, function(query) {
-      return jQuery.map(query.split(''), function(l, i) {
+    return queries.map(function(query) {
+      return query.split('').map(function(l, i) {
         return '\u0001$' + (i*2+1) + '\u0002$' + (i*2+2);
       }).join('');
     });
@@ -79,6 +88,30 @@ Searcher.prototype = new function() {
 
 
   /*  ----- Mathchers ------  */
+
+  /*
+   * This record matches if both the index and longIndex exactly equal queries[0]
+   * and the record matches all of the regexps. This ensures top-level exact matches
+   * like "String" are prioritized over nested classes like "Gem::Module::String".
+   */
+  function matchPassExact(index, longIndex, queries) {
+    return index == queries[0] && longIndex == queries[0];
+  }
+
+  /*
+   * This record matches if the index without "()" exactly equals queries[0].
+   * This prioritizes methods like "attribute()" when searching for "attribute".
+   */
+  function matchPassExactMethod(index, longIndex, queries, regexps) {
+    var indexWithoutParens = index.replace(/\(\)$/, '');
+    if (indexWithoutParens != queries[0]) return false;
+    if (index === indexWithoutParens) return false; // Not a method (no parens to remove)
+    for (var i=1, l = regexps.length; i < l; i++) {
+      if (!index.match(regexps[i]) && !longIndex.match(regexps[i]))
+        return false;
+    };
+    return true;
+  }
 
   /*
    * This record matches if the index starts with queries[0] and the record
@@ -187,17 +220,26 @@ Searcher.prototype = new function() {
     var togo = CHUNK_SIZE;
     var matchFunc, hltFunc;
 
-    while (state.pass < 4 && state.limit > 0 && togo > 0) {
+    var isLowercaseQuery = queries[0] === queries[0].toLowerCase();
+
+    while (state.pass < 6 && state.limit > 0 && togo > 0) {
+      // When query is lowercase, prioritize methods over classes
       if (state.pass == 0) {
-        matchFunc = matchPassBeginning;
+        matchFunc = isLowercaseQuery ? matchPassExactMethod : matchPassExact;
         hltFunc = highlightQuery;
       } else if (state.pass == 1) {
-        matchFunc = matchPassLongIndex;
+        matchFunc = isLowercaseQuery ? matchPassExact : matchPassExactMethod;
         hltFunc = highlightQuery;
       } else if (state.pass == 2) {
-        matchFunc = matchPassContains;
+        matchFunc = matchPassBeginning;
         hltFunc = highlightQuery;
       } else if (state.pass == 3) {
+        matchFunc = matchPassLongIndex;
+        hltFunc = highlightQuery;
+      } else if (state.pass == 4) {
+        matchFunc = matchPassContains;
+        hltFunc = highlightQuery;
+      } else if (state.pass == 5) {
         matchFunc = matchPassRegexp;
         hltFunc = highlightRegexp;
       }
@@ -221,9 +263,9 @@ Searcher.prototype = new function() {
   }
 
   function triggerResults(results, isLast) {
-    jQuery.each(this.handlers, function(i, fn) {
+    this.handlers.forEach(function(fn) {
       fn.call(this, results, isLast)
-    })
+    });
   }
 }
 

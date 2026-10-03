@@ -8,6 +8,7 @@
  */
 
 /* Provide console simulation for firebug-less environments */
+/*
 if (!("console" in window) || !("firebug" in console)) {
   var names = ["log", "debug", "info", "warn", "error", "assert", "dir", "dirxml",
     "group", "groupEnd", "time", "timeEnd", "count", "trace", "profile", "profileEnd"];
@@ -16,41 +17,35 @@ if (!("console" in window) || !("firebug" in console)) {
   for (var i = 0; i < names.length; ++i)
     window.console[names[i]] = function() {};
 };
-
-
-/**
- * Unwrap the first element that matches the given @expr@ from the targets and return them.
- */
-$.fn.unwrap = function( expr ) {
-  return this.each( function() {
-    $(this).parents( expr ).eq( 0 ).after( this ).remove();
-  });
-};
+*/
 
 
 function showSource( e ) {
   var target = e.target;
-  var codeSections = $(target).
-    parents('.method-detail').
-    find('.method-source-code');
-
-  $(target).
-    parents('.method-detail').
-    find('.method-source-code').
-    slideToggle();
+  while (!target.classList.contains('method-detail')) {
+    target = target.parentNode;
+  }
+  if (typeof target !== "undefined" && target !== null) {
+    target = target.querySelector('.method-source-code');
+  }
+  if (typeof target !== "undefined" && target !== null) {
+    target.classList.toggle('active-menu')
+  }
 };
 
 function hookSourceViews() {
-  $('.method-heading').click( showSource );
+  document.querySelectorAll('.method-source-toggle').forEach(function (codeObject) {
+    codeObject.addEventListener('click', showSource);
+  });
 };
 
 function hookSearch() {
-  var input  = $('#search-field').eq(0);
-  var result = $('#search-results').eq(0);
-  $(result).show();
+  var input  = document.querySelector('#search-field');
+  var result = document.querySelector('#search-results');
+  result.classList.remove("initially-hidden");
 
-  var search_section = $('#search-section').get(0);
-  $(search_section).show();
+  var search_section = document.querySelector('#search-section');
+  search_section.classList.remove("initially-hidden");
 
   var search = new Search(search_data, input, result);
 
@@ -59,7 +54,7 @@ function hookSearch() {
     var html = '';
 
     // TODO add relative path to <script> per-page
-    html += '<p class="search-match"><a href="' + index_rel_prefix + result.path + '">' + this.hlt(result.title);
+    html += '<p class="search-match"><a href="' + index_rel_prefix + this.escapeHTML(result.path) + '">' + this.hlt(result.title);
     if (result.params)
       html += '<span class="params">' + result.params + '</span>';
     html += '</a>';
@@ -77,85 +72,69 @@ function hookSearch() {
   }
 
   search.select = function(result) {
-    var result_element = result.get(0);
-    window.location.href = result_element.firstChild.firstChild.href;
+    var href = result.firstChild.firstChild.href;
+    var query = this.input.value;
+    if (query) {
+      var url = new URL(href, window.location.origin);
+      url.searchParams.set('q', query);
+      url.searchParams.set('nav', '0');
+      href = url.toString();
+    }
+    window.location.href = href;
   }
 
   search.scrollIntoView = search.scrollInWindow;
+
+  // Check for ?q= URL parameter and trigger search automatically
+  if (typeof URLSearchParams !== 'undefined') {
+    var urlParams = new URLSearchParams(window.location.search);
+    var queryParam = urlParams.get('q');
+    if (queryParam) {
+      var navParam = urlParams.get('nav');
+      var autoSelect = navParam !== '0';
+      input.value = queryParam;
+      search.search(queryParam, autoSelect);
+    }
+  }
 };
 
-function highlightTarget( anchor ) {
-  console.debug( "Highlighting target '%s'.", anchor );
-
-  $("a[name]").each( function() {
-    if ( $(this).attr("name") == anchor ) {
-      if ( !$(this).parent().parent().hasClass('target-section') ) {
-        console.debug( "Wrapping the target-section" );
-        $('div.method-detail').unwrap( 'div.target-section' );
-        $(this).parent().wrap( '<div class="target-section"></div>' );
-      } else {
-        console.debug( "Already wrapped." );
-      }
+function hookFocus() {
+  document.addEventListener("keydown", (event) => {
+    if (document.activeElement.tagName === 'INPUT') {
+      return;
+    }
+    if (event.key === "/") {
+      event.preventDefault();
+      document.querySelector('#search-field').focus();
     }
   });
-};
+}
 
-function highlightLocationTarget() {
-  console.debug( "Location hash: %s", window.location.hash );
-  if ( ! window.location.hash || window.location.hash.length == 0 ) return;
+function hookSidebar() {
+  var navigation = document.querySelector('#navigation');
+  var navigationToggle = document.querySelector('#navigation-toggle');
 
-  var anchor = window.location.hash.substring(1);
-  console.debug( "Found anchor: %s; matching %s", anchor, "a[name=" + anchor + "]" );
-
-  highlightTarget( anchor );
-};
-
-function highlightClickTarget( event ) {
-  console.debug( "Highlighting click target for event %o", event.target );
-  try {
-    var anchor = $(event.target).attr( 'href' ).substring(1);
-    console.debug( "Found target anchor: %s", anchor );
-    highlightTarget( anchor );
-  } catch ( err ) {
-    console.error( "Exception while highlighting: %o", err );
-  };
-};
-
-function loadAsync(path, success, prefix) {
-  $.ajax({
-    url: prefix + path,
-    dataType: 'script',
-    success: success,
-    cache: true
+  navigationToggle.addEventListener('click', function() {
+    navigation.hidden = !navigation.hidden;
+    navigationToggle.ariaExpanded = navigationToggle.ariaExpanded !== 'true';
   });
-};
 
-$(document).ready( function() {
-  hookSourceViews();
-  highlightLocationTarget();
-  $('ul.link-list a').bind( "click", highlightClickTarget );
-
-  var search_scripts_loaded = {
-    navigation_loaded:   false,
-    search_loaded:       false,
-    search_index_loaded: false,
-    searcher_loaded:     false,
-  }
-
-  var search_success_function = function(variable) {
-    return (function (data, status, xhr) {
-      search_scripts_loaded[variable] = true;
-
-      if (search_scripts_loaded['navigation_loaded']   == true &&
-          search_scripts_loaded['search_loaded']       == true &&
-          search_scripts_loaded['search_index_loaded'] == true &&
-          search_scripts_loaded['searcher_loaded']     == true)
-        hookSearch();
+  var isSmallViewport = window.matchMedia("(max-width: 1023px)").matches;
+  if (isSmallViewport) {
+    navigation.hidden = true;
+    navigationToggle.ariaExpanded = false;
+    document.addEventListener('click', (e) => {
+      if (e.target.closest('#navigation a')) {
+        navigation.hidden = true;
+        navigationToggle.ariaExpanded = false;
+      }
     });
   }
+}
 
-  loadAsync('js/navigation.js',   search_success_function('navigation_loaded'), rdoc_rel_prefix);
-  loadAsync('js/search.js',       search_success_function('search_loaded'), rdoc_rel_prefix);
-  loadAsync('js/search_index.js', search_success_function('search_index_loaded'), index_rel_prefix);
-  loadAsync('js/searcher.js',     search_success_function('searcher_loaded'), rdoc_rel_prefix);
+document.addEventListener('DOMContentLoaded', function() {
+  hookSourceViews();
+  hookSearch();
+  hookFocus();
+  hookSidebar();
 });
