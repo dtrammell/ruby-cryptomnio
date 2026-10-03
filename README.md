@@ -108,7 +108,7 @@ The gem is available as open source under the terms of the [MIT License](LICENSE
     rake test
     ```
 5.  Merge the release branch to `main`.
-6.  Push a `vX.Y.Z` tag. The `.github/workflows/publish.yml` workflow will build the gem and publish it to RubyGems.org using the `RUBYGEMS_AUTH_TOKEN` repository secret.
+6.  Push a `vX.Y.Z` tag. The `.github/workflows/publish.yml` workflow will build the gem and publish it to RubyGems.org via RubyGems Trusted Publishing (OIDC). No repository secret is required; GitHub Actions exchanges a short-lived OIDC token with RubyGems.org for authorization.
 
 ## Further Documentation
 
