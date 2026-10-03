@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.2.2 - 2026-10-02
+
+### Fixed
+
+*   Replaced global `$balance` with a local variable in `get_account_balance_symbol` and `get_account_available_balance_symbol` to prevent state leakage between calls (Issue #5).
+*   Made currency symbol matching case-insensitive and nil-safe in `get_account_balance_symbol` and `get_account_available_balance_symbol` (Issue #17).
+*   Single-sourced gem `VERSION` and `DATE` from `lib/cryptomnio/version.rb` to prevent version/date drift between the gemspec, runtime, and packaged artifact (Issue #18).
+*   Corrected `geminfo` to print the Cryptomnio API version (`API_VERSION`) on the "Cryptomnio API Version:" line instead of the gem version (Issue #19).
+
+### Changed
+
+*   Updated `cryptomnio.gemspec` `homepage` to point at the GitHub repository: `https://github.com/dtrammell/ruby-cryptomnio` (Issue #18).
+*   Added MIT `LICENSE` file at the repository root (Issue #18).
+
 ## 0.2.0 - 2026-05-26
 
 ### Added

@@ -2,6 +2,7 @@ require 'rest-client'
 require 'openssl'
 require 'base64'
 require 'json'
+require_relative "cryptomnio/version"
 
 ##
 # This is the root Cryptomnio object Class.  It contains global constants.
@@ -19,10 +20,10 @@ class Cryptomnio
 		@NAME        = "Cryptomnio Ruby Gem"
 		# The name of the Gem's Author
 		@AUTHOR      = "Dustin D. Trammell"
-		# The publication date of the current Gem version
-		@DATE        = "2023-01-28"
-		# The Gem version
-		@VERSION     = "0.2.1"
+		# The publication date of the current Gem version (from lib/cryptomnio/version.rb)
+		@DATE        = DATE
+		# The Gem version (from lib/cryptomnio/version.rb)
+		@VERSION     = VERSION
 		# The Cryptomnio API Version
 		@API_VERSION = "0.24.0"
 		# API URI Path Version Slug @URI_VERSION = "/v1"
@@ -35,7 +36,7 @@ class Cryptomnio
 	def geminfo
 		info  = @NAME + " "   + @VERSION + "\n"
 		info << @DATE + " - " + @AUTHOR  + "\n"
-		info << "Cryptomnio API Version: " + @VERSION + "\n"
+		info << "Cryptomnio API Version: " + @API_VERSION + "\n"
 
 		return info
 	end
@@ -281,18 +282,18 @@ puts "Retries: #{retries} | response.code: #{response.code}"
 		venuekeyid: @context[:venuekeyid] )
 
 		symbol = symbol.downcase
-		$balance = nil
+		balance = nil
 		# TODO: Check cached balance's timestamp, if too old, update balances
 		# Retrieve all balances for account
 		@balances = self.get_account_balance( venue: venue, accountid: accountid, venuekeyid: venuekeyid )
 		# Find the balance for the symbol we want
 		@balances["assets"].each do |asset|
-			$balance = asset["amount"] if asset["currency"] == symbol
+			balance = asset["amount"] if asset["currency"]&.downcase == symbol
 		end
 		# Raise an exception if the requested symbol is not found
-		raise "No balance returned for currency symbol \"%s\"" % symbol if ! $balance
-		# Return balance for requested symbol as a floating-point integer
-		return $balance.to_f
+		raise "No balance returned for currency symbol \"%s\"" % symbol if ! balance
+		# Return balance for requested symbol as a Float
+		return balance.to_f
 	end
 
 	# Get account balance for symbol
@@ -303,18 +304,18 @@ puts "Retries: #{retries} | response.code: #{response.code}"
 		venuekeyid: @context[:venuekeyid] )
 
 		symbol = symbol.downcase
-		$balance = nil
+		balance = nil
 		# TODO: Check cached balance's timestamp, if too old, update balances
 		# Retrieve all balances for account
 		@balances = self.get_account_balance( venue: venue, accountid: accountid, venuekeyid: venuekeyid )
 		# Find the balance for the symbol we want
 		@balances["assets"].each do |asset|
-			$balance = asset["available"] if asset["currency"] == symbol
+			balance = asset["available"] if asset["currency"]&.downcase == symbol
 		end
 		# Raise an exception if the requested symbol is not found
-		raise "No balance returned for currency symbol \"%s\"" % symbol if ! $balance
-		# Return balance for requested symbol as a floating-point integer
-		return $balance.to_f
+		raise "No balance returned for currency symbol \"%s\"" % symbol if ! balance
+		# Return balance for requested symbol as a Float
+		return balance.to_f
 	end
 
 	# Return an array of hashes of a venue account's orders
