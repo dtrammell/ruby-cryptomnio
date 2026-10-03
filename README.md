@@ -93,6 +93,23 @@ Bug reports and pull requests are welcome on GitHub.
 
 The gem is available as open source under the terms of the [MIT License](LICENSE).
 
+## Releasing
+
+1.  Bump `VERSION` and `DATE` in `lib/cryptomnio/version.rb`.
+2.  Add a `CHANGELOG.md` entry for the new version.
+3.  Regenerate the RDoc HTML and commit the updated `docs/`:
+    ```bash
+    ./build-docs.sh
+    git add docs
+    git commit -m "Docs: regenerate RDoc HTML for X.Y.Z"
+    ```
+4.  Run the full test suite and ensure it passes:
+    ```bash
+    rake test
+    ```
+5.  Merge the release branch to `main`.
+6.  Push a `vX.Y.Z` tag. The `.github/workflows/publish.yml` workflow will build the gem and publish it to RubyGems.org using the `RUBYGEMS_AUTH_TOKEN` repository secret.
+
 ## Further Documentation
 
 Comprehensive API documentation is generated and available [here](https://dtrammell.github.io/ruby-cryptomnio/).
