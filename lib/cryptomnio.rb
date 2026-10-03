@@ -20,9 +20,9 @@ class Cryptomnio
 		@NAME        = "Cryptomnio Ruby Gem"
 		# The name of the Gem's Author
 		@AUTHOR      = "Dustin D. Trammell"
-		# The publication date of the current Gem version
+		# The publication date of the current Gem version (from lib/cryptomnio/version.rb)
 		@DATE        = DATE
-		# The Gem version
+		# The Gem version (from lib/cryptomnio/version.rb)
 		@VERSION     = VERSION
 		# The Cryptomnio API Version
 		@API_VERSION = "0.24.0"
@@ -292,7 +292,7 @@ puts "Retries: #{retries} | response.code: #{response.code}"
 		end
 		# Raise an exception if the requested symbol is not found
 		raise "No balance returned for currency symbol \"%s\"" % symbol if ! balance
-		# Return balance for requested symbol as a floating-point integer
+		# Return balance for requested symbol as a Float
 		return balance.to_f
 	end
 
@@ -314,7 +314,7 @@ puts "Retries: #{retries} | response.code: #{response.code}"
 		end
 		# Raise an exception if the requested symbol is not found
 		raise "No balance returned for currency symbol \"%s\"" % symbol if ! balance
-		# Return balance for requested symbol as a floating-point integer
+		# Return balance for requested symbol as a Float
 		return balance.to_f
 	end
 

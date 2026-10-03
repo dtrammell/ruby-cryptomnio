@@ -4,7 +4,7 @@ A Ruby gem providing a robust interface to the Cryptomnio API, allowing interact
 
 ## Installation
 
-Add this line to your application's Gemfile:
+Once published to RubyGems, add this line to your application's Gemfile:
 
 ```ruby
 gem 'cryptomnio'
@@ -17,6 +17,16 @@ And then execute:
 Or install it yourself as:
 
     $ gem install cryptomnio
+
+### Build from Source
+
+Until the gem is published, build and install it locally from a clone of this repository:
+
+```bash
+./build-gem.sh
+```
+
+This builds `cryptomnio.gemspec` into a `.gem` file and installs it with `gem install`.
 
 ## Dependencies
 
@@ -81,7 +91,7 @@ Bug reports and pull requests are welcome on GitHub.
 
 ## License
 
-The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
+The gem is available as open source under the terms of the [MIT License](LICENSE).
 
 ## Further Documentation
 
