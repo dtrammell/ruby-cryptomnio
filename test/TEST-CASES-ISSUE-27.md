@@ -1,9 +1,10 @@
 # Test Case Design — Issue #27 (TLS client-certificate / mTLS auth)
 
-SE run #1491, Step 3 (QA). Designed by Gem (QA Lead). Implementation is **not** included here —
-this document specifies test cases for Coder to implement in `test/test_issue_27.rb` following
-the conventions in `test/test_issues_6_7_8.rb` (minitest, `build_client` helper, no live HTTP,
-`rake test` / `ruby test/test_issue_27.rb`).
+SE run #1491, Step 3 (QA). Designed by Gem (QA Lead). Revised after Step 4 (Project Leadership)
+review of commit `a4976b2`. Implementation is **not** included here — this document specifies
+test cases for Coder to implement in `test/test_issue_27.rb` following the conventions in
+`test/test_issues_6_7_8.rb` (minitest, `build_client` helper, no live HTTP, `rake test` /
+`ruby test/test_issue_27.rb`).
 
 **Pinned artifact:** `dtrammell/ruby-cryptomnio`, branch `main` @ `ec44c30606fcdd5ca39488ce037e2d46657bd945`.
 
@@ -38,7 +39,9 @@ is contacted by the automated suite; `RestClient::Request.execute` is stubbed vi
 `test/test_issues_6_7_8.rb`.
 
 Two independent throwaway CAs are generated, named to mirror the issue's real-world GEB/NUT CA
-separation (`Cryptomnio Geb CA`, `Cryptomnio Nut CA`), each signing its own leaf cert/key pair:
+separation (`Cryptomnio Geb CA`, `Cryptomnio Nut CA`), each signing its own leaf cert/key pair.
+Additional helpers generate a second, independent cert (for chain-file fixtures, TC-27-7) and an
+expired leaf cert/key pair (TC-27-8):
 
 ```ruby
 require 'openssl'
@@ -92,10 +95,72 @@ module MtlsFixtures
   def self.tap_write(dir, name, content)
     path = File.join(dir, name); File.write(path, content); path
   end
+
+  # A second, independent self-signed cert, used only as a second PEM block in chain-file
+  # fixtures (TC-27-7). It does not need to be cryptographically chained to any CA here — the
+  # behaviour under test is PEM-block parsing order (which block is used as the client cert /
+  # which blocks end up in the CA store), not certificate-path validation.
+  def self.extra_cert(label:)
+    key  = OpenSSL::PKey::RSA.new(2048)
+    name = OpenSSL::X509::Name.parse("/CN=Cryptomnio #{label.capitalize} Intermediate (fixture)")
+    OpenSSL::X509::Certificate.new.tap do |c|
+      c.version = 2; c.serial = 9; c.subject = name; c.issuer = name
+      c.public_key = key.public_key
+      c.not_before = Time.now - 3600; c.not_after = Time.now + 3600 * 24 * 365
+      c.sign(key, OpenSSL::Digest.new('SHA256'))
+    end
+  end
+
+  # A client-cert file holding a chain: the real leaf cert PEM block followed by a second,
+  # unrelated cert PEM block concatenated into one file — for TC-27-7's cert-chain half.
+  def self.chain_cert_path(pki, extra)
+    path = File.join(pki.dir, "chain_cert.pem")
+    File.write(path, pki.cert_object.to_pem + extra.to_pem)
+    path
+  end
+
+  # A CA file holding a chain: the real CA cert PEM block followed by a second, unrelated cert
+  # PEM block — for TC-27-7's CA-chain half.
+  def self.chain_ca_path(pki, extra)
+    path = File.join(pki.dir, "chain_ca.pem")
+    File.write(path, File.read(pki.ca_cert_path) + extra.to_pem)
+    path
+  end
+
+  # An expired leaf cert/key pair (notBefore/notAfter both in the past), signed by a throwaway
+  # CA — for TC-27-8. Deliberately standalone from `build` above so the main GEB/NUT fixtures'
+  # validity windows are untouched.
+  def self.build_expired(label:)
+    dir = Dir.mktmpdir("mtls-fixture-#{label}-expired-")
+    ca_key  = OpenSSL::PKey::RSA.new(2048)
+    ca_name = OpenSSL::X509::Name.parse("/CN=Cryptomnio #{label.capitalize} CA (expired-fixture)")
+    ca_cert = OpenSSL::X509::Certificate.new.tap do |c|
+      c.version = 2; c.serial = 1; c.subject = ca_name; c.issuer = ca_name
+      c.public_key = ca_key.public_key
+      c.not_before = Time.now - 3600 * 24 * 1000; c.not_after = Time.now + 3600 * 24 * 365
+      c.sign(ca_key, OpenSSL::Digest.new('SHA256'))
+    end
+    leaf_key = OpenSSL::PKey::RSA.new(2048)
+    leaf_cert = OpenSSL::X509::Certificate.new.tap do |c|
+      c.version = 2; c.serial = 2
+      c.subject = OpenSSL::X509::Name.parse("/CN=test-client-#{label}-expired@example.invalid")
+      c.issuer = ca_cert.subject; c.public_key = leaf_key.public_key
+      c.not_before = Time.now - 3600 * 24 * 730 # ~2 years ago
+      c.not_after  = Time.now - 3600 * 24 * 365 # ~1 year ago -- expired
+      c.sign(ca_key, OpenSSL::Digest.new('SHA256'))
+    end
+    cert_path = File.join(dir, "expired_cert.pem"); File.write(cert_path, leaf_cert.to_pem)
+    key_path  = File.join(dir, "expired_key.pem");  File.write(key_path, leaf_key.to_pem)
+    [cert_path, key_path]
+  end
 end
 
 GEB = MtlsFixtures.build(label: "geb")
 NUT = MtlsFixtures.build(label: "nut")
+
+GEB_CHAIN_CERT_PATH          = MtlsFixtures.chain_cert_path(GEB, MtlsFixtures.extra_cert(label: "geb"))
+GEB_CHAIN_CA_PATH            = MtlsFixtures.chain_ca_path(GEB, MtlsFixtures.extra_cert(label: "geb-root2"))
+EXPIRED_CERT_PATH, EXPIRED_KEY_PATH = MtlsFixtures.build_expired(label: "geb")
 ```
 
 `build_client` is extended with an optional `ssl:` kwarg merged into `STUB_CONFIG` before
@@ -103,7 +168,7 @@ construction, so cases can do `build_client(ssl: { ssl_client_cert: GEB.cert_pat
 
 ---
 
-## 1. Happy path & backward compatibility (5 cases)
+## 1. Happy path & backward compatibility (8 cases)
 
 | ID | Setup | Input / Action | Expected |
 |---|---|---|---|
@@ -111,7 +176,10 @@ construction, so cases can do `build_client(ssl: { ssl_client_cert: GEB.cert_pat
 | TC-27-2 | `build_client(ssl: {ssl_client_cert: GEB.cert_path, ssl_client_key: GEB.key_path})` (no CA file) | `client.get_venues` | Succeeds; captured kwargs include `ssl_client_cert`/`ssl_client_key` but **no** `ssl_ca_file` key at all (not `nil`-valued — absent) |
 | TC-27-3 | `build_client` with no `ssl:` kwarg at all (today's config shape, unchanged) | `client.get_venues` | Captured `RestClient::Request.execute` kwargs hash is `==` to exactly `{method:, url:, headers:, payload:}` — no `ssl_client_cert`/`ssl_client_key`/`ssl_ca_file`/`verify_ssl` key present under any key name, confirming byte-identical behaviour |
 | TC-27-4 | `build_client` with no `ssl:` kwarg | Construct only, no call | Construction does not raise; no new required constructor params were introduced |
-| TC-27-5 | `build_client(ssl: {ssl_ca_file: GEB.ca_cert_path})` (CA only, no cert/key — explicitly allowed per design) | `client.get_venues` | Construction succeeds; captured kwargs include `ssl_ca_file` only, no `ssl_client_cert`/`ssl_client_key` |
+| TC-27-5 | `build_client(ssl: {ssl_ca_file: GEB.ca_cert_path})` (CA only, no cert/key) | `client.get_venues` | Construction succeeds; captured kwargs include `ssl_ca_file` only, no `ssl_client_cert`/`ssl_client_key` — i.e. the request presents **no client certificate** and relies on `ssl_ca_file` purely for server-chain verification. See Decisions & Rationale #3 for the accept-vs-reject argument. |
+| TC-27-6 | `build_client(ssl: {ssl_ca_file: GEB.ca_cert_path})` — same config as TC-27-5, but this case asserts the **validation boundary** rather than the request shape: construction must *not* raise the "cert and key must both be provided" error that TC-27-10/TC-27-11 trigger when exactly one of cert/key is set. | Construct only, no call | Construction does not raise `ArgumentError`; CA-only is explicitly outside the all-or-nothing cert/key pairing rule, distinct from "only one of cert or key" |
+| TC-27-7 | `build_client(ssl: {ssl_client_cert: GEB_CHAIN_CERT_PATH, ssl_client_key: GEB.key_path, ssl_ca_file: GEB_CHAIN_CA_PATH})` — cert file and CA file each hold two concatenated PEM blocks (leaf + an unrelated second cert) | `client.get_venues` | Construction succeeds (no "multiple certs in file" error). The captured `ssl_client_cert` kwarg's `to_der` matches `GEB.cert_object` (the **first/leaf** PEM block only) — `cert.check_private_key(key)` must still pass against `GEB.key_object`, which would fail if the second block were loaded instead. `ssl_ca_file` is passed through as the raw path string unchanged (`GEB_CHAIN_CA_PATH`); both CA-chain PEM blocks in that file are left for `Net::HTTP`/OpenSSL to load from disk — the gem does no per-block parsing of `ssl_ca_file`. See Decisions & Rationale #9. |
+| TC-27-8 | `build_client(ssl: {ssl_client_cert: EXPIRED_CERT_PATH, ssl_client_key: EXPIRED_KEY_PATH})` — the cert's `not_after` is ~1 year in the past | Construct, then `client.get_venues` (stub returns 200) | Construction does **not** raise for expiry. `cert.check_private_key(key)` still returns `true` for an expired-but-matching pair, so the only validation performed is path/parse/match — no `cert.not_after < Time.now` check is added. The call proceeds and the expired cert is forwarded to `RestClient::Request.execute` exactly as a valid one would be; whether the *server* accepts an expired cert during the TLS handshake is the server's decision, not this gem's. See Decisions & Rationale #10 — this case exists specifically to stop an implementer from adding a surprise local expiry check. |
 
 ---
 
@@ -127,7 +195,7 @@ that the exception message contains the offending file path string but never the
 | TC-27-11 | `ssl_client_key: GEB.key_path` only, no cert | `build_client(ssl: ...)` | Raises `ArgumentError`, symmetric message |
 | TC-27-12 | `ssl_client_cert: "#{GEB.dir}/does-not-exist.pem"`, valid key | `build_client(ssl: ...)` | Raises; message includes the nonexistent path; never attempts `RestClient::Request.execute` |
 | TC-27-13 | Valid cert, `ssl_client_key: "#{GEB.dir}/does-not-exist.pem"` | `build_client(ssl: ...)` | Raises; message includes the path |
-| TC-27-14 | Valid cert+key, `ssl_ca_file: "#{GEB.dir}/does-not-exist.pem"` | `build_client(ssl: ...)` | Raises; CA path is validated even though it's optional-when-absent — once set, it must be valid; message includes the path |
+| TC-27-14 | Valid cert+key, `ssl_ca_file: "#{GEB.dir}/does-not-exist.pem"` | `build_client(ssl: ...)` | Raises at construction — the CA path is validated even though it's optional-when-absent — once set, it must be valid; message includes the path |
 | TC-27-15 | `ssl_client_cert: MtlsFixtures.garbage_file(GEB.dir)`, valid key | `build_client(ssl: ...)` | Raises (certificate parse failure); message includes the garbage file's path, never its contents |
 | TC-27-16 | Valid cert, `ssl_client_key: MtlsFixtures.garbage_file(GEB.dir)` | `build_client(ssl: ...)` | Raises (key parse failure); message includes path only |
 | TC-27-17 | `ssl_client_cert: GEB.cert_path`, `ssl_client_key: GEB.mismatched_key_path` (valid key, wrong pair) | `build_client(ssl: ...)` | Raises a distinct "certificate does not match key" message (not a generic parse error); no key material in message |
@@ -144,7 +212,7 @@ that the exception message contains the offending file path string but never the
 | TC-27-21 | `ssl_client_cert: GEB.cert_path`, `ssl_client_key: GEB.encrypted_key_path`, no `ssl_client_key_passphrase` | `build_client(ssl: ...)` | Raises a specific "key is encrypted, passphrase required" message — distinct from the generic parse-failure message in TC-27-16, not a bare `OpenSSL::PKey::PKeyError` leak |
 | TC-27-22 | Same, `ssl_client_key_passphrase: "definitely-wrong"` | `build_client(ssl: ...)` | Raises; message does not include the attempted passphrase or any key bytes |
 | TC-27-23 | `ssl_client_cert: GEB.cert_path`, `ssl_client_key: GEB.key_path` (unencrypted), `ssl_client_key_passphrase: "harmless"` | `build_client(ssl: ...)` | Construction succeeds — a passphrase supplied alongside an unencrypted key is not an error |
-| TC-27-24 | Same as TC-27-21 but `ssl_client_key_passphrase: ""` (empty string, not absent) | `build_client(ssl: ...)` | Raises the same "passphrase required" message as TC-27-21 — an explicit empty string is treated as "no passphrase provided," not as a (wrong) non-empty attempt. **Decision:** documented below. |
+| TC-27-24 | Same as TC-27-21 but `ssl_client_key_passphrase: ""` (empty string, not absent) | `build_client(ssl: ...)` | Raises the same "passphrase required" message as TC-27-21 — an explicit empty string is treated as "no passphrase provided," not as a (wrong) non-empty attempt. See Decisions & Rationale #4. |
 
 ---
 
@@ -251,7 +319,7 @@ end
 | ID | Setup | Input / Action | Expected |
 |---|---|---|---|
 | TC-27-60 | Build a client using the exact hash shape above (two-phase `c.config = {...}` then `c.config[:contexts] = {...}`, `exchange:` context label, not `default:`), with `ssl_client_cert`/`ssl_client_key`/`ssl_ca_file` merged into the first hash exactly as a future `connect_cryptomnio` update would add them from `@config[:cryptomnio][:ssl_*]` | Construct, then a stubbed call | Client constructs and forwards the ssl objects correctly through this exact nested/two-phase shape — confirms the gem's contract matches what the real consumer builds, not an idealized hand-built hash |
-| TC-27-61 | **Regression-watch, read-only.** At test time, `File.read` the live `automated-strategies/class_automated_strategy.rb` (no `require`, no execution) and regex-extract every `@config[:cryptomnio][:xxx]` key referenced inside the `connect_cryptomnio` method body | Compare extracted key set to a literal expected set | **Marked `skip` with an explanatory message**, not a hard pass/fail: today the extracted set is exactly `{api_host_core, api_host_cma, authtype, access_key, secret_key, exchange, accountid, venuekeyid}` — none of the four new `ssl_*` keys are forwarded yet. This documents a known gap: `automated-strategies` must be updated to forward `ssl_*` from `@config[:cryptomnio]` before any strategy can actually use mTLS, tracked as a follow-up in that repo, out of scope for this gem PR. The skip message points at this file and at the follow-up so the test is easy to re-enable (and will then assert the superset including the four new keys) once that follow-up lands. |
+| TC-27-61 | **Regression-watch, read-only, environment-conditional — not hardcoded skip.** At test time, check whether a sibling `automated-strategies` checkout is present (e.g. `File.exist?(AUTOMATED_STRATEGIES_PATH)`, path from an env var with a sensible local default). **If absent** (e.g. GitHub CI, or any fresh clone of `ruby-cryptomnio` alone): `skip` with an explicit message — `"automated-strategies checkout not found at <path>; this regression watch only runs where that sibling repo is checked out. See automated-strategies issue TBD for the ssl_* forwarding gap this test watches for."` **If present:** `File.read` the live `class_automated_strategy.rb` (no `require`, no execution) and regex-extract every `@config[:cryptomnio][:xxx]` key referenced inside the `connect_cryptomnio` method body | Compare extracted key set to the **full expected set including the four new `ssl_*` keys** | When the sibling checkout is present, this assertion is **expected to FAIL today** (as of SE#1491 / commit `a4976b2`): the extracted set is currently only `{api_host_core, api_host_cma, authtype, access_key, secret_key, exchange, accountid, venuekeyid}` — none of `ssl_client_cert`, `ssl_client_key`, `ssl_client_key_passphrase`, `ssl_ca_file` are forwarded yet. The failure message states this explicitly and points at **automated-strategies issue TBD** (NOVA/Project Leadership to file) rather than suggesting the fix belongs in this test. The test must not be silenced by weakening the assertion — fixing it means updating `connect_cryptomnio` in `automated-strategies`, not this gem. |
 
 ---
 
@@ -289,64 +357,103 @@ No orders are placed; only read-only/auth-probing endpoints are used.
    "never read file paths twice on retry" harder to reason about (an object has no path to even
    compare against for caching).
 
-3. **Empty-string passphrase and empty-string key path are tested as real values, not "absent"
+3. **CA-only config (`ssl_ca_file` set, cert/key absent) is accepted, not rejected (TC-27-5,
+   TC-27-6).** Reasoning: (a) the agreed design text itself singles out `ssl_ca_file` as the one
+   key that "remains optional" independent of the cert/key pairing rule — the all-or-nothing rule
+   is stated only for cert+key, never extended to include the CA file; (b) `ssl_ca_file` and the
+   client-cert pair serve two independent purposes — CA file verifies *the server's* chain,
+   cert+key authenticate *this client* to the server — so there is no cryptographic or protocol
+   reason one must imply the other; rest-client/`Net::HTTP` itself accepts `ca_file` with no
+   `cert`/`key` set without error. (c) It's also the realistic shape for a transitional rollout:
+   a strategy operator may want to pin/verify Blockhenge's private CA chain before client certs
+   are issued to every account, without that being treated as a misconfiguration. Rejecting
+   CA-only would force operators to either skip CA verification entirely or fabricate a cert/key
+   pair they don't have yet, both worse outcomes. If GEB/NUT's rollout plan changes such that a
+   client cert becomes mandatory whenever a private CA is configured, that would be a design
+   change requiring its own issue, not an assumption baked into this test design.
+
+4. **Empty-string passphrase and empty-string key path are tested as real values, not "absent"
    (TC-27-24, TC-27-34).** Ruby's `if value` treats `""` as truthy, so a naive implementation might
    pass validation checks gated on simple truthiness and then fail confusingly deep inside
    `File.read` or `OpenSSL::PKey.read`. These cases force the implementation to check emptiness
    explicitly and fail with a clear, named-field message instead.
 
-4. **Directory-instead-of-file is tested for all three path options (cert, key, CA — TC-27-14/35/36/37 area)**
+5. **Directory-instead-of-file is tested for all three path options (cert, key, CA — TC-27-14/35/36/37 area)**
    rather than just one, because the three options are validated through separate code paths
    (cert and key go through OpenSSL parsing, CA file is just handed to rest-client as a string) and
    each has an independent chance to leak a confusing low-level `Errno::EISDIR` instead of a
    clear, path-naming error.
 
-5. **The retry-path tests assert on `object_id`, not just value equality (TC-27-40/41).** Value
+6. **The retry-path tests assert on `object_id`, not just value equality (TC-27-40/41).** Value
    equality alone (`==`) would pass even if the implementation re-read and re-parsed the files on
    every retry attempt, which is both wasteful and reintroduces a window where an intermittent
    filesystem hiccup during a retry could turn a transient 502 into a hard failure. Checking
    identity is a stronger guarantee of "loaded once."
 
-6. **`$DEBUG` safety checks use a unique PEM-body text needle, not just header markers
+7. **`$DEBUG` safety checks use a unique PEM-body text needle, not just header markers
    (TC-27-45–48).** OpenSSL's default `#inspect` output for key objects is not guaranteed to dump
    raw key bytes on every OpenSSL/Ruby version, so asserting "no `#<OpenSSL::PKey::RSA` string
    appears" alone would not catch a version where `#inspect` is more verbose or less verbose than
    expected. A literal substring of the fixture's actual private key PEM is a version-independent
    tripwire.
 
-7. **Public certificate content is explicitly *not* restricted under `$DEBUG` (decision in case
+8. **Public certificate content is explicitly *not* restricted under `$DEBUG` (decision in case
    TC-27-45).** The design says "never log or inspect key objects" — certificates are public by
    nature (they're sent to the server in the clear during the TLS handshake), so restricting debug
    output to omit cert subject/serial would be stricter than the design requires and would make
    debugging mTLS connection problems harder for no security benefit. Only the private key object
    and the passphrase are treated as sensitive.
 
-8. **The `automated-strategies` seam is tested two ways, not one (section 9), because a single
-   hand-built config hash cannot by itself satisfy "metadata actually populated by production
-   code" (lesson 811).** TC-27-60 is a faithful, path-commented transcription of the actual
-   `connect_cryptomnio` hash-building code (including its unusual two-phase `c.config = {...}`
-   then `c.config[:contexts] = {...}` construction and the `exchange:` context label) rather than
-   an idealized minimal hash, so it exercises the real shape the gem must accept. TC-27-61 is a
-   live, read-only regression-watch over the actual `automated-strategies` source text that keeps
-   TC-27-60's transcription honest — if `connect_cryptomnio`'s hash-building code changes shape in
-   that repo, TC-27-61 fails loudly rather than letting TC-27-60's copy silently drift out of sync.
-   TC-27-61 is marked `skip` today because `automated-strategies` does not yet forward any
-   `ssl_*` keys — that gap is real, expected, and out of scope for this gem-only PR; fixing it is
-   a follow-up in the `automated-strategies` repo once GEB/NUT mTLS is live.
+9. **Chain files are defined to use the leaf block only, with no per-block parsing on our side
+   (TC-27-7).** For `ssl_client_cert`: `OpenSSL::X509::Certificate.new` parses only the first PEM
+   block it encounters in a multi-block file, so a concatenated leaf+intermediate cert file
+   naturally yields the leaf — this is existing Ruby/OpenSSL behaviour, not new code, and the test
+   pins it so nobody "fixes" it into unexpectedly building a chain array. For `ssl_ca_file`: this
+   value is a bare path string handed to `RestClient`/`Net::HTTP`, which in turn hands it to
+   OpenSSL's `SSL_CTX_load_verify_locations` — that call natively loads *every* PEM block in the
+   file for the trust store, so a root+intermediate CA bundle in one file is the normal, correct
+   way to supply a CA chain and requires zero special handling in this gem.
 
-9. **No automated test exercises a live Cryptomnio host.** All of section 10 is marked
-   manual/staging per the task brief, since it requires the real beta cert under `~/.secrets`
-   (never touched here) and would otherwise make a real signed network call. These are documented
-   as explicit manual steps for an operator rather than silently skipped or omitted, so Step 4
-   (staging validation) has a ready-made script instead of having to invent one from scratch —
-   the same failure mode SE#804/SE#633 hit when a test design existed only in prose.
+10. **An expired client cert is not rejected locally at construction (TC-27-8).** `check_private_key`
+    only verifies that the public/private key pair match; it does not check `not_before`/`not_after`.
+    Per the agreed design, construction-time validation is scoped to readability, parseability, and
+    cert/key match — nothing in the design calls for a local expiry check, and the server is the
+    correct authority on cert validity during the TLS handshake (consistent with TC-27-70/71/72,
+    where the server, not the gem, is what accepts or refuses a presented cert). This case exists
+    specifically to prevent an implementer from adding an unrequested, surprise
+    `cert.not_after < Time.now` guard that would make an about-to-expire cert fail differently
+    (and more confusingly, since it bypasses the server's own error) than letting the server decide.
 
-10. **Excluded:** PKCS#12 (`.p12`/`.pfx`) cert bundles. The issue's open questions mention PKCS#12
+11. **The `automated-strategies` seam is tested two ways, not one (section 9), because a single
+    hand-built config hash cannot by itself satisfy "metadata actually populated by production
+    code" (lesson 811).** TC-27-60 is a faithful, path-commented transcription of the actual
+    `connect_cryptomnio` hash-building code (including its unusual two-phase `c.config = {...}`
+    then `c.config[:contexts] = {...}` construction and the `exchange:` context label) rather than
+    an idealized minimal hash, so it exercises the real shape the gem must accept. TC-27-61 is a
+    live, read-only, **environment-conditional** regression-watch over the actual
+    `automated-strategies` source text that keeps TC-27-60's transcription honest. It is not a
+    hardcoded `skip` — it only skips (with an explicit reason) when the sibling checkout genuinely
+    isn't available, such as in `ruby-cryptomnio`'s own GitHub CI, which has no reason to clone a
+    separate private repo. When the checkout *is* available (e.g. in the shared SE workspace used
+    for this run), it runs for real, and today it legitimately **fails**, because
+    `automated-strategies` does not yet forward any `ssl_*` keys. That failure is reported
+    explicitly rather than hidden behind a skip, and the test message points at
+    **automated-strategies issue TBD** — fixing it is a follow-up in the `automated-strategies`
+    repo once GEB/NUT mTLS is live, not a reason to weaken this test.
+
+12. **No automated test exercises a live Cryptomnio host.** All of section 10 is marked
+    manual/staging per the task brief, since it requires the real beta cert under `~/.secrets`
+    (never touched here) and would otherwise make a real signed network call. These are documented
+    as explicit manual steps for an operator rather than silently skipped or omitted, so Step 4
+    (staging validation) has a ready-made script instead of having to invent one from scratch —
+    the same failure mode SE#804/SE#633 hit when a test design existed only in prose.
+
+13. **Excluded:** PKCS#12 (`.p12`/`.pfx`) cert bundles. The issue's open questions mention PKCS#12
     as a possible delivery format, but the final agreed-design comment settles on separate PEM
     cert and key files, which is what was actually delivered for GEB/NUT/beta. No PKCS#12 test
     case is included; if that format is later adopted, it needs its own design pass.
 
-11. **Excluded:** testing `ssl_client_cert`/`ssl_client_key` via a *relative* path vs. absolute
+14. **Excluded:** testing `ssl_client_cert`/`ssl_client_key` via a *relative* path vs. absolute
     path distinction. The design doesn't call out relative-path handling as a requirement, and
     Ruby's `File.read`/`OpenSSL::X509::Certificate.new` handle both identically relative to the
     process's current working directory; adding cases here would test Ruby's own stdlib, not this
@@ -356,7 +463,12 @@ No orders are placed; only read-only/auth-probing endpoints are used.
 
 ## Totals
 
-- **49 test cases** across 10 coverage areas (sections 1–10 above).
-- **46 automated** (sections 1–9, two client-isolated-process-style suites; TC-27-61 ships
-  `skip`ped pending an `automated-strategies` follow-up).
+- **53 test cases** across 10 coverage areas (sections 1–10 above), matching the 53 `TC-27-*`
+  table rows in this file exactly (every ID referenced in Decisions & Rationale has a
+  corresponding row; no row is unreferenced-but-orphaned).
+- **50 automated** (sections 1–9). Of these, 49 are expected to pass once implemented; TC-27-61 is
+  environment-conditional — it `skip`s with an explicit reason when no sibling
+  `automated-strategies` checkout is present (e.g. GitHub CI), and otherwise runs for real and is
+  expected to **fail today** against the known `ssl_*`-forwarding gap in that repo (tracked as
+  automated-strategies issue TBD).
 - **3 manual/staging** (section 10), explicitly out of the automated `rake test` run.
