@@ -227,13 +227,21 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		rescue => e
 			# Rescue any exceptions thrown by _check_errors
 
-			# Retry 3 times with pauses if temporary error
-puts "Retries: #{retries} | response.code: #{response.code}"
+			# Retry up to 3 times with pauses if the error is a 502 Bad Gateway.
+			# Note: the original code wrote `retries += 1 < 3`, which Ruby parses
+			# as `retries += (1 < 3)` because `<` binds tighter than `+=`.  That
+			# silently replaced the real API error with a TypeError and is fixed
+			# below; see issue #21.
 			retries += 1
-			if response.code == 502 and retries < 3
+			if response && response.code == 502 and retries < 3
 				sleep 30
 				retry
 			end
+
+			# Log the retry count only when debugging and only when we actually
+			# have an HTTP response object (nil is possible for connection-level
+			# errors; see issue #21).
+			puts "Retries: #{retries} | response.code: #{response ? response.code : 'nil'}" if $DEBUG
 			
 			# Output
 			puts e.inspect if $DEBUG
