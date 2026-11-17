@@ -829,36 +829,20 @@ class TestRegression < Minitest::Test
     assert_match(/0 failures, 0 errors/, output, "Existing suite had failures/errors. Output: #{output}")
   end
 
-  # TC-REG-2: full rake test passes (or has the one known expected failure)
+  # TC-REG-2: full rake test passes
   # Guarded against recursive invocation because this test itself runs inside rake test.
   #
-  # When the sibling automated-strategies checkout is present, the suite
-  # intentionally contains one expected failure: TC-27-61 watches for that
-  # repo to forward the new ssl_* keys (see automated-strategies #132).  In
-  # that environment the recursive run is allowed to exit non-zero with that
-  # single failure; otherwise the suite must be clean.
+  # TC-27-61 is a live regression watch over the sibling automated-strategies
+  # repo.  To keep this guard deterministic across machines and CI, the nested
+  # invocation forces AUTOMATED_STRATEGIES_PATH to a nonexistent path so
+  # TC-27-61 always skips; the outer run still exercises the real watch.
   def test_reg_2_full_rake_test
     if ENV['CRYPTOMNIO_REG2_RUNNING']
       skip "Already inside the recursive rake test run"
     end
-    output = `cd #{REPO_ROOT.shellescape} && CRYPTOMNIO_REG2_RUNNING=1 rake test 2>&1`
-
-    as_path = ENV.fetch("AUTOMATED_STRATEGIES_PATH",
-                        "/home/nova/.openclaw/workspace/automated-strategies")
-    as_present = File.exist?(File.join(as_path, "class_automated_strategy.rb"))
-
-    if as_present
-      assert_match(/1 failure/, output,
-                   "Expected exactly 1 known failure (TC-27-61). Output: #{output}")
-      assert_match(/0 errors/, output,
-                   "Expected no errors. Output: #{output}")
-      assert_match(/TestIssue27AutomatedStrategiesSeam#test_tc_27_61/, output,
-                   "Expected the single failure to be TC-27-61. Output: #{output}")
-    else
-      assert $?.success?, "rake test failed. Output: #{output}"
-      assert_match(/0 failures, 0 errors/, output,
-                   "rake test had failures/errors. Output: #{output}")
-    end
+    output = `cd #{REPO_ROOT.shellescape} && CRYPTOMNIO_REG2_RUNNING=1 AUTOMATED_STRATEGIES_PATH=/nonexistent/automated-strategies-1491 rake test 2>&1`
+    assert $?.success?, "rake test failed. Output: #{output}"
+    assert_match(/0 failures, 0 errors/, output, "rake test had failures/errors. Output: #{output}")
   end
 
   # TC-REG-3: ruby -c lib/cryptomnio.rb
