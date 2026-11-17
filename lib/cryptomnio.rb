@@ -186,17 +186,25 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 		# Add a Content-type header for application/json if there is a payload body to send
 		headers["Content-type"] = "application/json" if body
 
+		# Build the request parameters for RestClient.  TLS client-certificate
+		# options are added only when configured so that the default request is
+		# byte-identical to the pre-mTLS behaviour.
+		request_params = {
+			method:  method,
+			url:     uri,
+			headers: headers,
+			payload: body
+		}
+		request_params[:ssl_client_cert] = @ssl_client_cert if @ssl_client_cert
+		request_params[:ssl_client_key]  = @ssl_client_key  if @ssl_client_key
+		request_params[:ssl_ca_file]     = @ssl_ca_file     if @ssl_ca_file
+
 		# Call RestClient based on the method against URI with authentication headers "Access-Key" and "Sign"
 		retries ||= 0
 		response = nil
 		begin
 
-			RestClient::Request.execute(
-				method:  method,
-				url:     uri,
-				headers: headers,
-				payload: body
-				) do
+			RestClient::Request.execute(request_params) do
 				|inner_response, request, result, &block|
 				response = inner_response
 
@@ -221,7 +229,8 @@ class Cryptomnio::REST::Client < Cryptomnio::REST
 
 			# Retry 3 times with pauses if temporary error
 puts "Retries: #{retries} | response.code: #{response.code}"
-			if response.code == 502 and retries += 1 < 3 
+			retries += 1
+			if response.code == 502 and retries < 3
 				sleep 30
 				retry
 			end
@@ -767,6 +776,15 @@ puts "Retries: #{retries} | response.code: #{response.code}"
 				raise "Unrecognized Authentication Type: %s" % @config[:authtype]
 		end
 
+		# Initialize TLS client-certificate state so _rest_call always sees ivars.
+		@ssl_client_cert = nil
+		@ssl_client_key  = nil
+		@ssl_ca_file     = nil
+
+		# Load and validate optional TLS client-certificate credentials.
+		# This happens before any network I/O and before context validation.
+		load_ssl_credentials
+
 		# Check for at least one contexts (venue+account)
 		raise "Missing Configuration Paramters: contexts"         if @config[:contexts].count < 1
 
@@ -784,7 +802,13 @@ puts "Retries: #{retries} | response.code: #{response.code}"
 		# Output
 		if $DEBUG
 			puts "Cryptomnio Startup Configuration:"
-			p @config
+			# Redact the optional key passphrase before printing; the private key
+			# object itself is never stored in @config, only its path.
+			safe_config = @config.dup
+			if safe_config.key?(:ssl_client_key_passphrase)
+				safe_config[:ssl_client_key_passphrase] = "[REDACTED]"
+			end
+			p safe_config
 		end
 	end
 
@@ -833,6 +857,98 @@ puts "Retries: #{retries} | response.code: #{response.code}"
 			# Catch-all: Anything other than the above
 			raise "Error: %s: [%d]: %s" % [ thisfailure, response.code, response ] 
 			return false
+		end
+	end
+
+	private
+
+	# Loads and validates the optional per-instance TLS client-certificate
+	# configuration.  Raises before any network I/O if the cert/key pair is
+	# incomplete, a path is invalid or unreadable, parsing fails, or the key
+	# does not match the certificate.
+	def load_ssl_credentials
+		cert_path  = @config[:ssl_client_cert]
+		key_path   = @config[:ssl_client_key]
+		ca_path    = @config[:ssl_ca_file]
+		passphrase = @config[:ssl_client_key_passphrase]
+
+		cert_present = ! cert_path.nil?
+		key_present  = ! key_path.nil?
+
+		# Cert and key are an all-or-nothing pair; CA file is independent.
+		if cert_present != key_present
+			raise ArgumentError, "ssl_client_cert and ssl_client_key must both be set"
+		end
+
+		if cert_present
+			validate_path_option("ssl_client_cert", cert_path)
+			validate_path_option("ssl_client_key", key_path)
+			validate_passphrase(passphrase) if passphrase
+
+			@ssl_client_cert = load_client_certificate(cert_path)
+			@ssl_client_key  = load_private_key(key_path, passphrase)
+
+			# Verify that the loaded private key belongs to the certificate.
+			unless @ssl_client_cert.check_private_key(@ssl_client_key)
+				raise ArgumentError, "ssl_client_key does not match ssl_client_cert"
+			end
+		end
+
+		if ca_path
+			validate_path_option("ssl_ca_file", ca_path)
+			@ssl_ca_file = ca_path
+		end
+	end
+
+	# Validates that +path+ is a non-empty String naming a readable regular file.
+	# +name+ is the config key name used in error messages so failures are
+	# field-specific and never include file contents.
+	def validate_path_option(name, path)
+		unless path.is_a?(String) && ! path.empty?
+			raise ArgumentError, "#{name} must be a non-empty String path: #{path.inspect}"
+		end
+		unless File.exist?(path)
+			raise ArgumentError, "#{name} file not found: #{path}"
+		end
+		unless File.file?(path)
+			raise ArgumentError, "#{name} is not a file: #{path}"
+		end
+		unless File.readable?(path)
+			raise ArgumentError, "#{name} is not readable: #{path}"
+		end
+		path
+	end
+
+	# Loads an X.509 certificate from +path+.  Only the first PEM block is
+	# returned, which is the behaviour Ruby/OpenSSL provides for chain files.
+	def load_client_certificate(path)
+		OpenSSL::X509::Certificate.new(File.read(path))
+	rescue OpenSSL::X509::CertificateError, ArgumentError, SystemCallError => e
+		raise ArgumentError, "ssl_client_cert could not be loaded from #{path}: #{e.class}"
+	end
+
+	# Loads a private key from +path+, decrypting it with +passphrase+ when
+	# the PEM is encrypted.  Distinguishes "passphrase missing" from a generic
+	# parse failure by looking for encrypted PEM markers.
+	def load_private_key(path, passphrase)
+		key_pem   = File.read(path)
+		encrypted = key_pem.include?("ENCRYPTED PRIVATE KEY") ||
+		            key_pem.include?("Proc-Type: 4,ENCRYPTED")
+
+		OpenSSL::PKey.read(key_pem, passphrase || "")
+	rescue OpenSSL::PKey::PKeyError, SystemCallError => e
+		if encrypted && (passphrase.nil? || passphrase == "")
+			raise ArgumentError, "ssl_client_key is encrypted, passphrase required"
+		else
+			raise ArgumentError, "ssl_client_key could not be loaded from #{path}: #{e.class}"
+		end
+	end
+
+	# Validates the optional passphrase type.  An empty string is treated as
+	# "no passphrase" later, but a non-String value is rejected early.
+	def validate_passphrase(passphrase)
+		unless passphrase.is_a?(String)
+			raise ArgumentError, "ssl_client_key_passphrase must be a String"
 		end
 	end
 
