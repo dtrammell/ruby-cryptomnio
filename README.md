@@ -69,6 +69,37 @@ end
 client.context_switch(:default)
 ```
 
+### Optional mTLS / TLS Client-Certificate Authentication
+
+If the Cryptomnio server requires TLS client-certificate authentication (mTLS),
+configure the following optional keys when building the client.  All values are
+per-client-instance and are loaded once at construction time.
+
+```ruby
+client = Cryptomnio::REST::Client.new do |config|
+  config.config = {
+    # ... required API hosts, auth type, access/secret keys, contexts ...
+
+    # Path to the client certificate file (PEM).  If this is set,
+    # ssl_client_key must also be set.
+    :ssl_client_cert => "/path/to/client-cert.pem",
+
+    # Path to the private key file (PEM) that matches the certificate.
+    :ssl_client_key => "/path/to/client-key.pem",
+
+    # Optional passphrase for an encrypted private key file.
+    :ssl_client_key_passphrase => "my-passphrase",
+
+    # Optional path to a CA bundle file used to verify the server chain.
+    # Setting this alone (without cert/key) is valid for server-chain pinning.
+    :ssl_ca_file => "/path/to/ca-bundle.pem"
+  }
+end
+```
+
+When none of these keys are set, requests are byte-identical to the pre-mTLS
+behaviour.  The gem never logs or inspects key material, including under `$DEBUG`.
+
 ### Example API Calls
 
 #### Get Supported Venues
