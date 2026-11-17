@@ -258,6 +258,17 @@ module Issue27
       end
     end
 
+    # Asserts that the supplied block raises without RestClient::Request.execute
+    # ever being invoked.  Used for construction-time validation failures.
+    def assert_no_execute_calls_during_failure
+      with_execute_stub([]) do |spy|
+        err = yield
+        assert_empty spy.calls,
+          "RestClient::Request.execute must not be called during a construction-time failure"
+        err
+      end
+    end
+
     # Asserts that the captured text contains no private key material.
     def refute_key_material_leak(output, msg)
       refute_includes output, "BEGIN PRIVATE KEY", "#{msg}: leaked PRIVATE KEY header"
@@ -396,112 +407,132 @@ module Issue27
   class TestIssue27Validation < Minitest::Test
     include Helpers
 
-    # TC-27-10: only cert configured raises.
+    # TC-27-10: only cert configured raises; no network call is attempted.
     def test_tc_27_10_cert_only_raises
-      err = assert_raises(ArgumentError) do
-        build_client(ssl: { ssl_client_cert: GEB.cert_path })
+      err = assert_no_execute_calls_during_failure do
+        assert_raises(ArgumentError) do
+          build_client(ssl: { ssl_client_cert: GEB.cert_path })
+        end
       end
       assert_match(/ssl_client_cert/, err.message)
       assert_match(/ssl_client_key/, err.message)
     end
 
-    # TC-27-11: only key configured raises.
+    # TC-27-11: only key configured raises; no network call is attempted.
     def test_tc_27_11_key_only_raises
-      err = assert_raises(ArgumentError) do
-        build_client(ssl: { ssl_client_key: GEB.key_path })
+      err = assert_no_execute_calls_during_failure do
+        assert_raises(ArgumentError) do
+          build_client(ssl: { ssl_client_key: GEB.key_path })
+        end
       end
       assert_match(/ssl_client_cert/, err.message)
       assert_match(/ssl_client_key/, err.message)
     end
 
-    # TC-27-12: missing cert file names the path.
+    # TC-27-12: missing cert file names the path; no network call is attempted.
     def test_tc_27_12_missing_cert_file
       missing = File.join(GEB.dir, "does-not-exist.pem")
-      err = assert_raises(ArgumentError) do
-        build_client(ssl: { ssl_client_cert: missing, ssl_client_key: GEB.key_path })
+      err = assert_no_execute_calls_during_failure do
+        assert_raises(ArgumentError) do
+          build_client(ssl: { ssl_client_cert: missing, ssl_client_key: GEB.key_path })
+        end
       end
       assert_match(/ssl_client_cert/, err.message)
       assert_match(/does-not-exist\.pem/, err.message)
     end
 
-    # TC-27-13: missing key file names the path.
+    # TC-27-13: missing key file names the path; no network call is attempted.
     def test_tc_27_13_missing_key_file
       missing = File.join(GEB.dir, "does-not-exist.pem")
-      err = assert_raises(ArgumentError) do
-        build_client(ssl: { ssl_client_cert: GEB.cert_path, ssl_client_key: missing })
+      err = assert_no_execute_calls_during_failure do
+        assert_raises(ArgumentError) do
+          build_client(ssl: { ssl_client_cert: GEB.cert_path, ssl_client_key: missing })
+        end
       end
       assert_match(/ssl_client_key/, err.message)
       assert_match(/does-not-exist\.pem/, err.message)
     end
 
-    # TC-27-14: missing CA file is validated at construction.
+    # TC-27-14: missing CA file is validated at construction; no network call is attempted.
     def test_tc_27_14_missing_ca_file
       missing = File.join(GEB.dir, "does-not-exist.pem")
-      err = assert_raises(ArgumentError) do
-        build_client(ssl: {
-          ssl_client_cert: GEB.cert_path,
-          ssl_client_key:  GEB.key_path,
-          ssl_ca_file:     missing
-        })
+      err = assert_no_execute_calls_during_failure do
+        assert_raises(ArgumentError) do
+          build_client(ssl: {
+            ssl_client_cert: GEB.cert_path,
+            ssl_client_key:  GEB.key_path,
+            ssl_ca_file:     missing
+          })
+        end
       end
       assert_match(/ssl_ca_file/, err.message)
       assert_match(/does-not-exist\.pem/, err.message)
     end
 
-    # TC-27-15: garbage cert file raises without leaking contents.
+    # TC-27-15: garbage cert file raises without leaking contents; no network call is attempted.
     def test_tc_27_15_garbage_cert
-      err = assert_raises(ArgumentError) do
-        build_client(ssl: {
-          ssl_client_cert: MtlsFixtures.garbage_file(GEB.dir),
-          ssl_client_key:  GEB.key_path
-        })
+      err = assert_no_execute_calls_during_failure do
+        assert_raises(ArgumentError) do
+          build_client(ssl: {
+            ssl_client_cert: MtlsFixtures.garbage_file(GEB.dir),
+            ssl_client_key:  GEB.key_path
+          })
+        end
       end
       assert_match(/ssl_client_cert/, err.message)
       refute_match(/not PEM data/, err.message)
     end
 
-    # TC-27-16: garbage key file raises without leaking contents.
+    # TC-27-16: garbage key file raises without leaking contents; no network call is attempted.
     def test_tc_27_16_garbage_key
-      err = assert_raises(ArgumentError) do
-        build_client(ssl: {
-          ssl_client_cert: GEB.cert_path,
-          ssl_client_key:  MtlsFixtures.garbage_file(GEB.dir)
-        })
+      err = assert_no_execute_calls_during_failure do
+        assert_raises(ArgumentError) do
+          build_client(ssl: {
+            ssl_client_cert: GEB.cert_path,
+            ssl_client_key:  MtlsFixtures.garbage_file(GEB.dir)
+          })
+        end
       end
       assert_match(/ssl_client_key/, err.message)
       refute_match(/not PEM data/, err.message)
     end
 
-    # TC-27-17: mismatched cert/key pair raises a distinct error.
+    # TC-27-17: mismatched cert/key pair raises a distinct error; no network call is attempted.
     def test_tc_27_17_mismatched_key
-      err = assert_raises(ArgumentError) do
-        build_client(ssl: {
-          ssl_client_cert: GEB.cert_path,
-          ssl_client_key:  GEB.mismatched_key_path
-        })
+      err = assert_no_execute_calls_during_failure do
+        assert_raises(ArgumentError) do
+          build_client(ssl: {
+            ssl_client_cert: GEB.cert_path,
+            ssl_client_key:  GEB.mismatched_key_path
+          })
+        end
       end
       assert_match(/does not match/, err.message)
       refute_match(/BEGIN/, err.message)
     end
 
-    # TC-27-18: cert file supplied as key path raises a key parse error.
+    # TC-27-18: cert file supplied as key path raises a key parse error; no network call is attempted.
     def test_tc_27_18_cert_as_key
-      err = assert_raises(ArgumentError) do
-        build_client(ssl: {
-          ssl_client_cert: GEB.cert_path,
-          ssl_client_key:  GEB.cert_path
-        })
+      err = assert_no_execute_calls_during_failure do
+        assert_raises(ArgumentError) do
+          build_client(ssl: {
+            ssl_client_cert: GEB.cert_path,
+            ssl_client_key:  GEB.cert_path
+          })
+        end
       end
       assert_match(/ssl_client_key/, err.message)
     end
 
-    # TC-27-19: empty key file is rejected, not treated as absent.
+    # TC-27-19: empty key file is rejected, not treated as absent; no network call is attempted.
     def test_tc_27_19_empty_key_file
-      err = assert_raises(ArgumentError) do
-        build_client(ssl: {
-          ssl_client_cert: GEB.cert_path,
-          ssl_client_key:  MtlsFixtures.empty_file(GEB.dir)
-        })
+      err = assert_no_execute_calls_during_failure do
+        assert_raises(ArgumentError) do
+          build_client(ssl: {
+            ssl_client_cert: GEB.cert_path,
+            ssl_client_key:  MtlsFixtures.empty_file(GEB.dir)
+          })
+        end
       end
       assert_match(/ssl_client_key/, err.message)
     end
@@ -769,6 +800,45 @@ module Issue27
       ]
       with_execute_stub(responses) do
         assert_equal({"venues" => ["A"]}, client.get_venues)
+      end
+    end
+
+    # Issue #21 (a): three consecutive 502s exhaust retries and raise the
+    # original error, not a TypeError from the precedence bug.
+    def test_issue_21_retry_exhaustion_three_502s
+      client = build_client
+      def client.sleep(_seconds); end
+
+      # Three 502s means initial attempt + two retries; the third 502 is not
+      # retried and the original 502 error must propagate.
+      responses = [
+        FakeResponse.new(502, '{"body":null}'),
+        FakeResponse.new(502, '{"body":null}'),
+        FakeResponse.new(502, '{"body":null}')
+      ]
+      with_execute_stub(responses) do |spy|
+        err = assert_raises(RuntimeError) { client.get_venues }
+        assert_match(/502/, err.message)
+        assert_equal 3, spy.calls.length
+      end
+    end
+
+    # Issue #21 (b): a connection-level error that leaves +response+ nil must
+    # not be masked by NoMethodError from the retry logging block.
+    def test_issue_21_nil_response_does_not_crash
+      client = build_client
+      def client.sleep(_seconds); end
+
+      # Replace execute with a stub that raises before yielding, leaving the
+      # block's response variable unset (nil).
+      RestClient::Request.define_singleton_method(:execute) do |*_args|
+        raise "connection refused"
+      end
+      begin
+        err = assert_raises(RuntimeError) { client.get_venues }
+        assert_match(/connection refused/, err.message)
+      ensure
+        RestClient::Request.singleton_class.remove_method(:execute) rescue nil
       end
     end
   end
